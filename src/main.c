@@ -14,11 +14,39 @@
  * limitations under the License.
  */
 
+#include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <syslog.h>
+
+#include <pcie_comm/config.h>
+
+static bool quit;
+
+static void handle_sigint(int signo)
+{
+	quit = true;
+	syslog(LOG_NOTICE, "Received SIGINT. " PRJ_NAME_LONG " will shut down.");
+}
 
 int main(void)
 {
-	printf("PCIe Communication Server\n");
+	/* syslog initialization */
+	setlogmask(LOG_UPTO(LOG_DEBUG));
+	openlog(PRJ_NAME_SHORT, LOG_CONS | LOG_NDELAY, LOG_USER);
+
+	/* signal initialization */
+	signal(SIGINT, handle_sigint);
+
+	/* server initialization */
+	quit = false;
+	syslog(LOG_NOTICE, "Starting " PRJ_NAME_LONG "...");
+
+	while (!quit)
+		;
+
+	syslog(LOG_NOTICE, "Shutting down " PRJ_NAME_LONG ".");
+	closelog();
 
 	return 0;
 }
