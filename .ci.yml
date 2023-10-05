@@ -1,0 +1,29 @@
+stages:
+  - build
+
+Build PCIe Communication Server:
+  stage: build
+  image: "d2s://external/docker/debian:bookworm"
+  tags: ["ace-x86_64"]
+
+  variables:
+    SCALENODE_CPU: 2
+    SCALENODE_DISK: 10
+    SCALENODE_RAM: 2000
+    DEBIAN_FRONTEND: noninteractive
+
+  before_script:
+    - apt update -qq
+    - apt upgrade -y -qq
+    - apt install -y -qq cmake
+
+  script:
+    - mkdir -p build
+    - cmake -S . -B build
+    - make -j $(nproc) -C build
+
+  artifacts:
+    paths:
+      - build/server
+    when: always
+
