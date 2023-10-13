@@ -18,19 +18,29 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <syslog.h>
+#include <unistd.h>
+#include <stdlib.h>
 
+#include <pcie_comm/server.h>
+#include <pcie_comm/client.h>
 #include <pcie_comm/config.h>
 
 static bool quit;
+static struct server_t server;
 
 static void handle_sigint(int signo)
 {
 	quit = true;
 	syslog(LOG_NOTICE, "Received SIGINT. " PRJ_NAME_LONG " will shut down.");
+
+	/* disconnect every user */
+	server_disconnect_clients(&server, NULL);
 }
 
 int main(void)
 {
+	int ret;
+
 	/* syslog initialization */
 	setlogmask(LOG_UPTO(LOG_DEBUG));
 	openlog(PRJ_NAME_SHORT, LOG_CONS | LOG_NDELAY, LOG_USER);
@@ -42,8 +52,13 @@ int main(void)
 	quit = false;
 	syslog(LOG_NOTICE, "Starting " PRJ_NAME_LONG "...");
 
-	while (!quit)
-		;
+	ret = server_create(&server);
+	if (!ret)
+		while (!quit)
+			server_loop(&server);
+	else
+		syslog(LOG_NOTICE, "Failed to set up server for " PRJ_NAME_LONG ".");
+
 
 	syslog(LOG_NOTICE, "Shutting down " PRJ_NAME_LONG ".");
 	closelog();

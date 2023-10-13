@@ -44,4 +44,4 @@ Checkpatch:
     - chmod +x checkpatch.pl
 
     # Use xargs instead of find's -exec due to the status return code limitation in find
-    - find . -iname '*.c' -not -path "./build/*" | xargs ./checkpatch.pl -f --no-tree --ignore SPDX_LICENSE_TAG
+    - find . -iname '*.[ch]' -not -path "./build/*" | xargs ./checkpatch.pl -f --no-tree --ignore SPDX_LICENSE_TAG
