@@ -1,16 +1,18 @@
-stages:
-  - build
-
-Build PCIe Communication Server:
-  stage: build
+.job_template:
   image: "d2s://external/docker/debian:bookworm"
   tags: ["ace-x86_64"]
-
   variables:
     SCALENODE_CPU: 2
     SCALENODE_DISK: 10
     SCALENODE_RAM: 2000
     DEBIAN_FRONTEND: noninteractive
+
+stages:
+  - build
+
+Build PCIe Communication Server:
+  stage: build
+  extends: .job_template
 
   before_script:
     - apt update -qq
@@ -27,3 +29,19 @@ Build PCIe Communication Server:
       - build/server
     when: always
 
+Checkpatch:
+  stage: build
+  extends: .job_template
+
+  before_script:
+    - apt update -qq
+    - apt upgrade -y -qq
+    - apt install -y -qq wget perl
+
+  script:
+    # Download checkpatch.pl script directly from the Linux kernel source tree
+    - wget https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/scripts/checkpatch.pl
+    - chmod +x checkpatch.pl
+
+    # Use xargs instead of find's -exec due to the status return code limitation in find
+    - find . -iname '*.[ch]' -not -path "./build/*" | xargs ./checkpatch.pl -f --no-tree --ignore SPDX_LICENSE_TAG
