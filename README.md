@@ -1,28 +1,24 @@
 PCIe Communication Server
 =========================
 
-```
-Copyright 2023 Antmicro <www.antmicro.com>
-Copyright 2023 Meta
+Copyright (c) 2023 [Antmicro](https://www.antmicro.com)  
+Copyright (c) 2023 Meta
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
+A TCP server for the PCIe Communication Library, which aims to facilitate
+creating PCIe links in a distributed simulation environment. This includes:
+* packetizing/depacketizing PCIe transactions into TLPs and DLLPs 
+* transmitting PCIe transactions over sockets using a custom PCIe/IP TCP-based
+  protocol
+* creating PCIe links between instances of different simulators/emulators (e.g.
+  [Renode](https://renode.io/) and QEMU)
+* handling MSIs, packet routing and flow control
 
 Building
 --------
 
 To build the PCIe Communication Server, use the following snippet:
 
+<!-- name="server-build" -->
 ```
 mkdir -p build
 cmake -S . -B build
