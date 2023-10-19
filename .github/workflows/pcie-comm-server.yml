@@ -10,18 +10,21 @@ jobs:
         with:
           python-version: '3.10'
 
-      - run: apt update -qq
-      - run: apt upgrade -y -qq
-      - run: apt install -y -qq cmake git
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get upgrade -y -qq
+          sudo apt-get install -y -qq cmake git
       - run: pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
       - run: tuttest README.md server-build | bash -
   Checkpatch:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - run: apt update -qq
-      - run: apt upgrade -y -qq
-      - run: apt install -y -qq wget perl
-      - run: wget https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/scripts/checkpatch.pl
-      - run: chmod +x checkpatch.pl
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get upgrade -y -qq
+          sudo apt-get install -y -qq wget perl
+      - run: |
+          wget https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/scripts/checkpatch.pl
+          chmod +x checkpatch.pl
       - run: find . -iname '*.[ch]' -not -path "./build/*" | xargs ./checkpatch.pl -f --no-tree --ignore SPDX_LICENSE_TAG
