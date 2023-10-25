@@ -74,7 +74,7 @@ static int server_accept(struct server_t *server)
 {
 	int fd, ret;
 	struct sockaddr_in sock_addr;
-	socklen_t sock_addr_len;
+	socklen_t sock_addr_len = sizeof(sock_addr);
 	struct client_t *new_client;
 	struct client_node_t *new_client_node;
 

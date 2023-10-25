@@ -20,11 +20,14 @@
 
 #include <sys/queue.h>
 #include <stdbool.h>
+#include <pcie_comm/config.h>
 
 /* client struct */
 struct client_t {
 	int fd;
+	int seqno;
 	bool active;
+	char buf[CLIENT_BUFFER_SIZE];
 };
 
 /* BSD TAILQ (sys/queue) node struct */
