@@ -17,17 +17,23 @@ Build PCIe Communication Server:
   before_script:
     - apt update -qq
     - apt upgrade -y -qq
-    - apt install -y -qq cmake python3-dev python3-pip python3-venv git
+    - apt install -y -qq cmake python3-dev python3-pip python3-venv git lcov
 
   script:
     - python3 -m venv venv
     - source venv/bin/activate
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
     - tuttest README.md server-build | bash -
+    
+    - ./build/server-tests
+    - ./scripts/coverage.sh
+    - tar czf coverage.tar.gz coverage
 
   artifacts:
     paths:
       - build/server
+      - build/server-tests
+      - coverage.tar.gz
     when: always
 
 Checkpatch:
@@ -45,4 +51,4 @@ Checkpatch:
     - chmod +x checkpatch.pl
 
     # Use xargs instead of find's -exec due to the status return code limitation in find
-    - find . -iname '*.[ch]' -not -path "./build/*" | xargs ./checkpatch.pl -f --no-tree --ignore SPDX_LICENSE_TAG
+    - find . -iname '*.[ch]' -not -path "./build/*" -and -not -path "./tests/*" | xargs ./checkpatch.pl -f --no-tree

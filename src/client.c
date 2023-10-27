@@ -26,8 +26,6 @@
 #include <pcie_comm/config.h>
 #include <pcie_comm/proto.h>
 
-#include <stdio.h>
-
 void handle_dllp(struct client_t *client, const struct pcie_dllp *pkt)
 {
 	if (pkt->dl_type == PCIE_DLLP_ACK || pkt->dl_type == PCIE_DLLP_NAK) {

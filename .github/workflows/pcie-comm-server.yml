@@ -13,9 +13,20 @@ jobs:
       - run: |
           sudo apt-get update -qq
           sudo apt-get upgrade -y -qq
-          sudo apt-get install -y -qq cmake git
+          sudo apt-get install -y -qq cmake git lcov
       - run: pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
       - run: tuttest README.md server-build | bash -
+      - run: |
+          ./build/server-tests
+          ./scripts/coverage.sh
+          tar czf coverage.tar.gz coverage
+      - uses: actions/upload-artifact@v3
+        with:
+          path: |
+              ./build/server
+              ./build/server-tests
+              ./coverage.tar.gz
+
   Checkpatch:
     runs-on: ubuntu-22.04
     steps:
@@ -27,4 +38,5 @@ jobs:
       - run: |
           wget https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/scripts/checkpatch.pl
           chmod +x checkpatch.pl
-      - run: find . -iname '*.[ch]' -not -path "./build/*" | xargs ./checkpatch.pl -f --no-tree --ignore SPDX_LICENSE_TAG
+      - run: find . -iname '*.[ch]' -not -path "./build/*" -and -not -path "./tests/*" | xargs ./checkpatch.pl -f --no-tree
+
