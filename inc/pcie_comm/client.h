@@ -20,7 +20,10 @@
 
 #include <sys/queue.h>
 #include <stdbool.h>
+#include <stdint.h>
+
 #include <pcie_comm/config.h>
+#include <pcie_comm/proto.h>
 
 /* client struct */
 struct client_t {
@@ -41,5 +44,6 @@ TAILQ_HEAD(client_q, client_node_t);
 
 void client_create(struct client_t *client, int client_fd);
 void client_read(struct client_t *client);
+void client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqno);
 
 #endif /* PCIE_COMM_CLIENT_H */
