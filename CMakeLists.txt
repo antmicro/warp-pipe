@@ -53,6 +53,8 @@ include_directories(
 set(pcie_comm_src
   ${CMAKE_SOURCE_DIR}/src/server.c
   ${CMAKE_SOURCE_DIR}/src/client.c
+  ${CMAKE_SOURCE_DIR}/src/crc.c
+  ${CMAKE_SOURCE_DIR}/src/proto.c
 )
 
 # sources of the test suite
