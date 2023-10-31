@@ -18,6 +18,7 @@ project("PCIe Communication Server" LANGUAGES C CXX)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # required for GTest
 set(CMAKE_CXX_STANDARD 14)
