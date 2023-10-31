@@ -165,7 +165,10 @@ void client_read(struct client_t *client)
 
 	switch ((enum pcie_proto)tport->t_proto) {
 	case PCIE_PROTO_DLLP:
-		handle_dllp(client, &tport->t_dllp);
+		if (pcie_crc16_valid(&tport->t_dllp))
+			handle_dllp(client, &tport->t_dllp);
+		else
+			syslog(LOG_WARNING, "DLLP corrupted CRC");
 		break;
 	case PCIE_PROTO_TLP:
 		{
@@ -190,8 +193,13 @@ void client_read(struct client_t *client)
 				}
 				len += n;
 			}
-			client_ack(client, PCIE_DLLP_ACK, tport->t_tlp.dl_seqno_hi << 8 | tport->t_tlp.dl_seqno_lo);
-			handle_tlp(client, &tport->t_tlp.dl_tlp);
+			int crc_ok = pcie_lcrc32_valid(&tport->t_tlp);
+
+			client_ack(client, crc_ok ? PCIE_DLLP_ACK : PCIE_DLLP_NAK, tport->t_tlp.dl_seqno_hi << 8 | tport->t_tlp.dl_seqno_lo);
+			if (crc_ok)
+				handle_tlp(client, &tport->t_tlp.dl_tlp);
+			else
+				syslog(LOG_WARNING, "TLP corrupted CRC");
 			break;
 		}
 	default:

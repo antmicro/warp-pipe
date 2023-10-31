@@ -44,6 +44,18 @@ void pcie_crc16(struct pcie_dllp *pkt)
 	}
 }
 
+bool pcie_crc16_valid(struct pcie_dllp *pkt)
+{
+	uint16_t crc = ~crc32(pkt, pkt->dl_crc16, 0xffff, DLLP_CRC16_POLY);
+
+	for (int i = 0; i < 2; i++) {
+		if (pkt->dl_crc16[i] != (crc & 0xff))
+			return false;
+		crc = crc >> 8;
+	}
+	return true;
+}
+
 void pcie_lcrc32(struct pcie_dltlp *pkt)
 {
 	int total_length = tlp_total_length(&pkt->dl_tlp);
@@ -55,4 +67,19 @@ void pcie_lcrc32(struct pcie_dltlp *pkt)
 		end[i] = crc & 0xff;
 		crc = crc >> 8;
 	}
+}
+
+bool pcie_lcrc32_valid(struct pcie_dltlp *pkt)
+{
+	int total_length = tlp_total_length(&pkt->dl_tlp);
+	uint8_t *end = (void *)&pkt->dl_tlp + total_length;
+
+	uint32_t crc = ~crc32(pkt, end, 0xffffffff, TLP_LCRC32_POLY);
+
+	for (int i = 0; i < 4; i++) {
+		if (end[i] != (crc & 0xff))
+			return false;
+		crc = crc >> 8;
+	}
+	return true;
 }
