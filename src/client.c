@@ -131,8 +131,8 @@ void client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqn
 	struct pcie_transport tport = {
 		.t_proto = PCIE_PROTO_DLLP,
 		.t_dllp = {
-			.dl_type = type,
 			.dl_acknak = {
+				.dl_nak = type,
 				.dl_seqno_hi = seqno >> 8,
 				.dl_seqno_lo = seqno & 0xff,
 			},
@@ -193,7 +193,7 @@ void client_read(struct client_t *client)
 				}
 				len += n;
 			}
-			int crc_ok = pcie_lcrc32_valid(&tport->t_tlp);
+			bool crc_ok = pcie_lcrc32_valid(&tport->t_tlp);
 
 			client_ack(client, crc_ok ? PCIE_DLLP_ACK : PCIE_DLLP_NAK, tport->t_tlp.dl_seqno_hi << 8 | tport->t_tlp.dl_seqno_lo);
 			if (crc_ok)
