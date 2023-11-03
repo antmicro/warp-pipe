@@ -21,7 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* The polynomials below are taken from the spec, but with reversed bit
+/* The polynomials below are taken from the PCIe 5.0 spec, but with reversed bit
  * order so as to avoid unnecessary convoluted steps described there.
  */
 #define DLLP_CRC16_POLY 0xd008
