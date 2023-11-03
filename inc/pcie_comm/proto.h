@@ -208,7 +208,7 @@ struct pcie_dllp {
 			uint8_t fc_datafc_lo:8;
 		} dl_fc;
 	};
-	uint8_t dl_crc16_hi, dl_crc16_lo;
+	uint8_t dl_crc16[2];
 };
 
 struct pcie_dltlp {
@@ -244,5 +244,8 @@ struct pcie_transport {
 static_assert(sizeof(struct pcie_dllp) == 6);
 static_assert(sizeof(struct pcie_tlp) == 16);
 static_assert(sizeof(struct pcie_transport) == 19);
+
+int tlp_data_length(const struct pcie_tlp *pkt);
+int tlp_total_length(const struct pcie_tlp *pkt);
 
 #endif /* PCIE_COMM_PROTO_H */

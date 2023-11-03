@@ -25,6 +25,7 @@
 #include <pcie_comm/client.h>
 #include <pcie_comm/config.h>
 #include <pcie_comm/proto.h>
+#include <pcie_comm/crc.h>
 
 void handle_dllp(struct client_t *client, const struct pcie_dllp *pkt)
 {
@@ -74,7 +75,19 @@ void client_cpl(struct client_t *client, const struct pcie_tlp *pkt, const void 
 		}
 		sent += n;
 	}
-	n = send(client->fd, "\xcc\xcc\xcc\xcc", 4, 0);  /* TODO: compute LCRC32, for now hardcode 0xcccccccc */
+
+	uint32_t crc = crc32(&tport.t_tlp, tport.t_tlp.dl_tlp.tlp_cpl.c_data, 0xffffffff, TLP_LCRC32_POLY);
+
+	crc = ~crc32(data, data + length, crc, TLP_LCRC32_POLY);
+
+	uint8_t crc_data[4];
+
+	for (int i = 0; i < 4; i++) {
+		crc_data[i] = crc & 0xff;
+		crc = crc >> 8;
+	}
+
+	n = send(client->fd, crc_data, 4, 0);
 	if (n < 4) {
 		syslog(LOG_ERR, "Sending TLP: %s. Disconnecting.",
 		       n < 0 ? strerror(errno) : "unexpected EOF");
@@ -85,9 +98,7 @@ void client_cpl(struct client_t *client, const struct pcie_tlp *pkt, const void 
 
 void handle_tlp(struct client_t *client, const struct pcie_tlp *pkt)
 {
-	int data_len = pkt->tlp_length_hi << 8 | pkt->tlp_length_lo;
-
-	data_len = ((data_len - 1) & 0x3FF) + 1;  // 0 means 1024
+	int data_len = tlp_data_length(pkt);
 
 	switch ((enum pcie_tlp_type)(pkt->tlp_fmt << 5 | pkt->tlp_type)) {
 	case PCIE_TLP_IORD:
@@ -125,9 +136,11 @@ void client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqn
 				.dl_seqno_hi = seqno >> 8,
 				.dl_seqno_lo = seqno & 0xff,
 			},
-			.dl_crc16_hi = 0xcc, .dl_crc16_lo = 0xcc,  /* TODO: compute crc16, for now hardcode 0xcccc */
 		},
 	};
+
+	pcie_crc16(&tport.t_dllp);
+
 	int n = send(client->fd, &tport, 1 + sizeof(struct pcie_dllp), 0);
 
 	if (n != 1 + sizeof(struct pcie_dllp)) {
@@ -152,36 +165,23 @@ void client_read(struct client_t *client)
 
 	switch ((enum pcie_proto)tport->t_proto) {
 	case PCIE_PROTO_DLLP:
-		handle_dllp(client, &tport->t_dllp);
+		if (pcie_crc16_valid(&tport->t_dllp))
+			handle_dllp(client, &tport->t_dllp);
+		else
+			syslog(LOG_WARNING, "DLLP corrupted CRC");
 		break;
 	case PCIE_PROTO_TLP:
 		{
-			int hdr_len = 0;
-			int data_len = tport->t_tlp.dl_tlp.tlp_length_hi << 8 | tport->t_tlp.dl_tlp.tlp_length_lo;
+			int total = tlp_total_length(&tport->t_tlp.dl_tlp);
 
-			data_len = ((data_len - 1) & 0x3FF) + 1;  // 0 means 1024
-
-			switch (tport->t_tlp.dl_tlp.tlp_fmt) {
-			case 0:
-				data_len = 0;
-				[[fallthrough]];
-			case 2:
-				hdr_len = 3;  // 3 DW header
-				break;
-			case 1:
-				data_len = 0;
-				[[fallthrough]];
-			case 3:
-				hdr_len = 4;  // 4 DW header
-				break;
-			default:
+			if (total < 0) {  // error
 				syslog(LOG_ERR, "Unknown TLP format: %d! Disconnecting.", tport->t_tlp.dl_tlp.tlp_fmt);
 				client->active = false;
 				return;
 			}
-			int total = 7 + (hdr_len + data_len) * 4;  // 7 = 1B proto + 2B DL header + 4B DL LCRC32
+			total += 7;  // 7 = 1B proto + 2B DL header + 4B DL LCRC32
 
-			assert(total < CLIENT_BUFFER_SIZE);
+			assert(total <= CLIENT_BUFFER_SIZE);
 			while (len < total) {
 				int n = recv(client->fd, client->buf + len, total - len, 0);
 
@@ -193,8 +193,13 @@ void client_read(struct client_t *client)
 				}
 				len += n;
 			}
-			client_ack(client, PCIE_DLLP_ACK, tport->t_tlp.dl_seqno_hi << 8 | tport->t_tlp.dl_seqno_lo);
-			handle_tlp(client, &tport->t_tlp.dl_tlp);
+			int crc_ok = pcie_lcrc32_valid(&tport->t_tlp);
+
+			client_ack(client, crc_ok ? PCIE_DLLP_ACK : PCIE_DLLP_NAK, tport->t_tlp.dl_seqno_hi << 8 | tport->t_tlp.dl_seqno_lo);
+			if (crc_ok)
+				handle_tlp(client, &tport->t_tlp.dl_tlp);
+			else
+				syslog(LOG_WARNING, "TLP corrupted CRC");
 			break;
 		}
 	default:
