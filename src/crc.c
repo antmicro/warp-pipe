@@ -18,7 +18,7 @@
 #include <pcie_comm/crc.h>
 #include <pcie_comm/proto.h>
 
-uint32_t crc32(const void *start, const void *end, uint32_t init, uint32_t poly)
+uint32_t crc32p(const void *start, const void *end, uint32_t init, uint32_t poly)
 {
 	uint32_t crc = init;
 
@@ -36,7 +36,7 @@ uint32_t crc32(const void *start, const void *end, uint32_t init, uint32_t poly)
 
 void pcie_crc16(struct pcie_dllp *pkt)
 {
-	uint16_t crc = ~crc32(pkt, pkt->dl_crc16, 0xffff, DLLP_CRC16_POLY);
+	uint16_t crc = ~crc32p(pkt, pkt->dl_crc16, 0xffff, DLLP_CRC16_POLY);
 
 	for (int i = 0; i < 2; i++) {
 		pkt->dl_crc16[i] = crc & 0xff;
@@ -46,7 +46,7 @@ void pcie_crc16(struct pcie_dllp *pkt)
 
 bool pcie_crc16_valid(struct pcie_dllp *pkt)
 {
-	uint16_t crc = ~crc32(pkt, pkt->dl_crc16, 0xffff, DLLP_CRC16_POLY);
+	uint16_t crc = ~crc32p(pkt, pkt->dl_crc16, 0xffff, DLLP_CRC16_POLY);
 
 	for (int i = 0; i < 2; i++) {
 		if (pkt->dl_crc16[i] != (crc & 0xff))
@@ -61,7 +61,7 @@ void pcie_lcrc32(struct pcie_dltlp *pkt)
 	int total_length = tlp_total_length(&pkt->dl_tlp);
 	uint8_t *end = (void *)&pkt->dl_tlp + total_length;
 
-	uint32_t crc = ~crc32(pkt, end, 0xffffffff, TLP_LCRC32_POLY);
+	uint32_t crc = ~crc32p(pkt, end, 0xffffffff, TLP_LCRC32_POLY);
 
 	for (int i = 0; i < 4; i++) {
 		end[i] = crc & 0xff;
@@ -74,7 +74,7 @@ bool pcie_lcrc32_valid(struct pcie_dltlp *pkt)
 	int total_length = tlp_total_length(&pkt->dl_tlp);
 	uint8_t *end = (void *)&pkt->dl_tlp + total_length;
 
-	uint32_t crc = ~crc32(pkt, end, 0xffffffff, TLP_LCRC32_POLY);
+	uint32_t crc = ~crc32p(pkt, end, 0xffffffff, TLP_LCRC32_POLY);
 
 	for (int i = 0; i < 4; i++) {
 		if (end[i] != (crc & 0xff))

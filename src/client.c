@@ -76,9 +76,9 @@ void client_cpl(struct client_t *client, const struct pcie_tlp *pkt, const void 
 		sent += n;
 	}
 
-	uint32_t crc = crc32(&tport.t_tlp, tport.t_tlp.dl_tlp.tlp_cpl.c_data, 0xffffffff, TLP_LCRC32_POLY);
+	uint32_t crc = crc32p(&tport.t_tlp, tport.t_tlp.dl_tlp.tlp_cpl.c_data, 0xffffffff, TLP_LCRC32_POLY);
 
-	crc = ~crc32(data, data + length, crc, TLP_LCRC32_POLY);
+	crc = ~crc32p(data, data + length, crc, TLP_LCRC32_POLY);
 
 	uint8_t crc_data[4];
 

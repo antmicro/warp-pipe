@@ -62,6 +62,7 @@ set(pcie_comm_src
 set(pcie_comm_test_src
   ${CMAKE_SOURCE_DIR}/tests/common.cc
   ${CMAKE_SOURCE_DIR}/tests/test_client.cc
+  ${CMAKE_SOURCE_DIR}/tests/test_crc.cc
   ${CMAKE_SOURCE_DIR}/tests/test_server.cc
 )
 
