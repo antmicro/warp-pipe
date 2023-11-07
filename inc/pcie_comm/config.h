@@ -21,7 +21,7 @@
 #define PRJ_NAME_LONG			"PCIe Communication Server"
 #define PRJ_NAME_SHORT			"pcied"
 
-#define SERVER_PORT_NUM			2115
+#define SERVER_PORT_NUM			"2115"
 #define SERVER_LISTEN_QUEUE_SIZE	64
 
 #define CLIENT_MAX_PACKET_DATA_SIZE	4096

@@ -214,6 +214,4 @@ void client_create(struct client_t *client, int client_fd)
 	client->fd = client_fd;
 	client->seqno = 0;
 	client->active = true;
-
-	syslog(LOG_NOTICE, "New client connected!");
 }

@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-#include <arpa/inet.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <syslog.h>
+#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -56,6 +57,8 @@ void server_disconnect_clients(struct server_t *server, bool (*condition)(struct
 			TAILQ_REMOVE(&server->clients, i, next);
 			free(i);
 			syslog(LOG_NOTICE, "Client disconnected!");
+			if (!server->listen)
+				server->quit = true;
 		}
 	}
 }
@@ -73,20 +76,30 @@ static void server_read(struct server_t *server)
 static int server_accept(struct server_t *server)
 {
 	int fd, ret;
-	struct sockaddr_in sock_addr;
+	struct sockaddr_storage sock_addr;
 	socklen_t sock_addr_len = sizeof(sock_addr);
 	struct client_t *new_client;
 	struct client_node_t *new_client_node;
+	char host[NI_MAXHOST];
+	char port[NI_MAXSERV];
 
-	ret = listen(server->fd, SERVER_LISTEN_QUEUE_SIZE);
-	if (ret == -1) {
-		perror("Failed to listen for connections on the socket!");
-		return -1;
+	if (server->listen) {
+		fd = accept(server->fd, (struct sockaddr *)&sock_addr, &sock_addr_len);
+		if (fd == -1)
+			return fd;
+
+		ret = getnameinfo((struct sockaddr *)&sock_addr, sock_addr_len, host, sizeof(host), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			fprintf(stderr, "getnameinfo: %s\n", gai_strerror(ret));
+			return -1;
+		}
+
+		syslog(LOG_NOTICE, "New client connection from %s:%s", host, port);
+	} else {
+		if (!TAILQ_EMPTY(&server->clients))
+			return -1;
+		fd = server->fd;
 	}
-
-	fd = accept(server->fd, (struct sockaddr *)&sock_addr, &sock_addr_len);
-	if (fd == -1)
-		return fd;
 
 	new_client = malloc(sizeof(struct client_t));
 	if (!new_client)
@@ -108,37 +121,79 @@ static int server_accept(struct server_t *server)
 int server_create(struct server_t *server)
 {
 	int fd_flags, ret;
-	char in_addr[INET_ADDRSTRLEN];
-	struct sockaddr_in sock_addr = {
-		.sin_addr = {INADDR_ANY},
-		.sin_port = htons(SERVER_PORT_NUM),
-		.sin_family = AF_INET,
-	};
+	char host[NI_MAXHOST];
+	char port[NI_MAXSERV];
+	int sfd;
+
+	struct addrinfo  hints;
+	struct addrinfo  *result, *rp;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = server->addr_family;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = (server->listen ? AI_PASSIVE : 0) | AI_ADDRCONFIG;
+	hints.ai_protocol = 0;
+
+	ret = getaddrinfo(server->host, server->port, &hints, &result);
+
+	if (ret != 0) {
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ret));
+		return -1;
+	}
 
 	/* set up server socket */
-	server->fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (server->fd == -1) {
-		perror("Failed to create a socket!");
+	for (rp = result; rp != NULL; rp = rp->ai_next) {
+		sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+		if (sfd == -1)
+			continue;
+
+		if ((server->listen ? bind : connect)(sfd, rp->ai_addr, rp->ai_addrlen) != -1) {
+			if (server->listen) {
+				ret = listen(sfd, SERVER_LISTEN_QUEUE_SIZE);
+				if (ret == -1) {
+					perror("Failed to listen for connections on the socket!");
+					return -1;
+				}
+
+			}
+
+			struct sockaddr_storage addr;
+			socklen_t addrlen = sizeof(addr);
+
+			ret = (server->listen ? getsockname : getpeername)(sfd, (struct sockaddr *)&addr, &addrlen);
+			if (ret != 0) {
+				perror(server->listen ? "getsockname" : "getpeername");
+				return -1;
+			}
+
+			ret = getnameinfo((struct sockaddr *)&addr, addrlen, host, sizeof(host), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
+			if (ret != 0) {
+				fprintf(stderr, "getnameinfo: %s\n", gai_strerror(ret));
+				return -1;
+			}
+
+			syslog(LOG_NOTICE, PRJ_NAME_LONG " %s %s:%s.", server->listen ? "listening on" : "connected to", host, port);
+			break;
+		}
+
+		close(sfd);
+	}
+
+	freeaddrinfo(result);
+
+	if (rp == NULL) {
+		perror(sfd == -1 ? "Failed to create a socket" :
+		       server->listen ? "Failed to bind the socket" : "Failed to connect the socket");
 		return -1;
 	}
-	server->max_fd = server->fd;
+	server->max_fd = server->fd = sfd;
 
 	/* set the socket to be non-blocking */
-	fd_flags = fcntl(server->fd, F_GETFL, 0);
-	fcntl(server->fd, F_SETFL, fd_flags | O_NONBLOCK);
-
-	ret = bind(server->fd, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
-	if (ret == -1) {
-		perror("Failed to bind the socket!");
-		return -1;
-	}
+	fd_flags = fcntl(sfd, F_GETFL, 0);
+	fcntl(sfd, F_SETFL, fd_flags | O_NONBLOCK);
 
 	/* set up client linked list */
 	TAILQ_INIT(&server->clients);
-
-	inet_ntop(AF_INET, &(sock_addr.sin_addr), in_addr, INET_ADDRSTRLEN);
-	syslog(LOG_NOTICE, PRJ_NAME_LONG " listening on %s:%d.", in_addr,
-			ntohs(sock_addr.sin_port));
 
 	return 0;
 }
