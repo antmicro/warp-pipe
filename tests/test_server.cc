@@ -26,10 +26,15 @@ FAKE_VALUE_FUNC(int, bind, int, void *, int);
 FAKE_VALUE_FUNC(int, socket, int, int, int);
 FAKE_VALUE_FUNC(int, listen, int, int);
 FAKE_VALUE_FUNC(int, accept, int, struct sockaddr *, socklen_t *);
+FAKE_VALUE_FUNC(int, getsockname, int, struct sockaddr *, socklen_t *);
+FAKE_VALUE_FUNC(int, getpeername, int, struct sockaddr *, socklen_t *);
+FAKE_VALUE_FUNC(int, getnameinfo, struct sockaddr *, socklen_t *, char *, socklen_t, char *, socklen_t, int);
 }
 
 TEST(TestServer, CreatesServer) {
-	struct server_t server;
+	struct server_t server = {};
+	server.listen = true;
+	server.port = "0";
 
 	RESET_FAKE(bind);
 	RESET_FAKE(socket);
@@ -44,7 +49,9 @@ TEST(TestServer, CreatesServer) {
 }
 
 TEST(TestServer, CreatesServerFailSocket) {
-	struct server_t server;
+	struct server_t server = {};
+	server.listen = true;
+	server.port = "0";
 
 	RESET_FAKE(socket);
 
@@ -54,7 +61,9 @@ TEST(TestServer, CreatesServerFailSocket) {
 }
 
 TEST(TestServer, CreatesServerFailBind) {
-	struct server_t server;
+	struct server_t server = {};
+	server.listen = true;
+	server.port = "0";
 
 	RESET_FAKE(socket);
 	RESET_FAKE(bind);
@@ -66,7 +75,9 @@ TEST(TestServer, CreatesServerFailBind) {
 }
 
 TEST(TestServer, ServerLoopEmpty) {
-	struct server_t server;
+	struct server_t server = {};
+	server.listen = true;
+	server.port = "0";
 
 	RESET_FAKE(bind);
 	RESET_FAKE(socket);
