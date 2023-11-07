@@ -90,11 +90,11 @@ static int server_accept(struct server_t *server)
 
 	new_client = malloc(sizeof(struct client_t));
 	if (!new_client)
-		return -1;
+		goto fail;
 
 	new_client_node = malloc(sizeof(struct client_node_t));
 	if (!new_client_node)
-		return -1;
+		goto fail_free_client;
 
 	client_create(new_client, fd);
 	new_client_node->client = new_client;
@@ -103,6 +103,11 @@ static int server_accept(struct server_t *server)
 	server_track_max_fd(server, fd);
 
 	return 0;
+
+fail_free_client:
+	free(new_client);
+fail:
+	return -1;
 }
 
 int server_create(struct server_t *server)

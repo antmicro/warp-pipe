@@ -29,7 +29,7 @@ struct completion_status_t {
 	int error_code;
 };
 
-typedef void (*pcie_read_cb_t)(uint64_t addr, void *data, int length);
+typedef const void *(*pcie_read_cb_t)(uint64_t addr, int length);
 typedef void (*pcie_write_cb_t)(uint64_t addr, const void *data, int length);
 
 typedef void (*pcie_completion_cb_t)(const struct completion_status_t completion_status, const void *data, int length);
@@ -44,7 +44,7 @@ struct client_t {
 	pcie_write_cb_t pcie_write_cb;
 	// 0x1F is maximum allowed tag
 	pcie_completion_cb_t pcie_completion_cb[32];
-	uint8_t pcie_read_tag;
+	uint8_t pcie_read_tag : 5;
 
 };
 /* BSD TAILQ (sys/queue) node struct */

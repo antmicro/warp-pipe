@@ -211,7 +211,7 @@ TEST(TestClient, ClientReadTLPIOWR) {
 	struct pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_TLP;
-	tport_out.t_tlp.dl_tlp.tlp_fmt = 2;
+	tport_out.t_tlp.dl_tlp.tlp_fmt = 1;
 	tport_out.t_tlp.dl_tlp.tlp_type = 2;
 	pcie_lcrc32(&tport_out.t_tlp);
 
@@ -321,7 +321,7 @@ TEST(TestClient, ClientReadTLPCPLFail) {
 			return len;
 		},
 		[&](int sockfd, void *msg, size_t len, int flags) -> int {
-			memcpy(msg, ((uint8_t*)(&tport_out)) + total_sent, len);
+			memcpy(msg, ((uint8_t*)&tport_out) + total_sent, len);
 			total_sent += len;
 			return len;
 		}
@@ -335,10 +335,10 @@ TEST(TestClient, ClientReadTLPCPLFail) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes, 2);
 
 	client_create(&client, 10);
-	pcie_register_read_cb(&client, [](uint64_t addr, void *data, int length) {});
+	pcie_register_read_cb(&client, [](uint64_t addr, int length) { static uint8_t result[4096]; return (const void *)result; });
 	client_read(&client);
 
-	EXPECT_EQ(total_sent, sizeof(struct pcie_transport));
+	EXPECT_EQ(total_sent, 19);
 
 	ASSERT_FALSE(client.active);
 }
@@ -359,7 +359,7 @@ TEST(TestClient, ClientReadTLPCPLCRCFail) {
 			return len;
 		},
 		[&](int sockfd, void *msg, size_t len, int flags) -> int {
-			memcpy(msg, ((uint8_t*)(&tport_out)) + total_sent, len);
+			memcpy(msg, ((uint8_t*)&tport_out) + total_sent, len);
 			total_sent += len;
 			return len;
 		}
@@ -400,7 +400,7 @@ TEST(TestClient, ClientReadCreditDLL) {
 			return len;
 		},
 		[&](int sockfd, void *msg, size_t len, int flags) -> int {
-			memcpy(msg, ((uint8_t*)(&tport_out)) + total_sent, len);
+			memcpy(msg, ((uint8_t*)&tport_out) + total_sent, len);
 			total_sent += len;
 			return len;
 		}
@@ -477,7 +477,7 @@ TEST(TestClient, ClientPcieRead) {
 	struct client_t client;
 	struct pcie_transport tport_request = {0};
 	int tport_request_recv = 0;
-	struct pcie_transport *tport_request2 = (struct pcie_transport *)malloc(sizeof(struct pcie_dltlp) + 40 * sizeof(uint8_t));
+	struct pcie_transport *tport_request2 = malloc(sizeof(struct pcie_transport) + 40);
 	int tport_response_send = 0;
 	int total_sent2 = 0;
 	int total_sent_rec = 0;
@@ -514,7 +514,7 @@ TEST(TestClient, ClientPcieRead) {
 		},
 		// request part 2
 		[&](int sockfd, void *msg, size_t len, int flags) -> int {
-			memcpy(msg, ((uint8_t*)(&tport_request)) + tport_response_send, len);
+			memcpy(msg, ((uint8_t*)&tport_request) + tport_response_send, len);
 			tport_response_send += len;
 			return len;
 		},
@@ -526,7 +526,7 @@ TEST(TestClient, ClientPcieRead) {
 		},
 		// completion part 2
 		[&](int sockfd, void *msg, size_t len, int flags) -> int {
-			memcpy(msg, ((uint8_t*)(tport_request2)) + total_sent2, len);
+			memcpy(msg, ((uint8_t*)tport_request2) + total_sent2, len);
 			total_sent2 += len;
 			return len;
 		}
@@ -538,24 +538,24 @@ TEST(TestClient, ClientPcieRead) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 4);
 
 	client_create(&client, 10);
-	pcie_register_read_cb(&client, [](uint64_t addr, void *data, int length)
+	pcie_register_read_cb(&client, [](uint64_t addr, int length)
 	{
-		uint8_t *result = (uint8_t *)data;
-		memset(result, 0, sizeof(uint8_t) * length * 4);
-		for (int i = 0; i < length * 4; i++) {
+		static uint8_t result[4096];
+		memset(result, 0, length);
+		for (int i = 0; i < length; i++) {
 			result[i] = (uint8_t)i;
 		}
-		return;
+		return (const void *)result;
 	});
 
-	int rc = pcie_read(&client, 0x1234, 10, [](const struct completion_status_t completion_status, const void *data, int length)
+	int rc = pcie_read(&client, 0x1234, 40, [](const struct completion_status_t completion_status, const void *data, int length)
 	{
 		uint8_t *result = (uint8_t *)data;
 		ASSERT_EQ(completion_status.error_code, 0);
-		ASSERT_EQ(length, 10);
+		ASSERT_EQ(length, 40);
 
-		for (int i = 0; i < length * 4; i++)
-			ASSERT_EQ((uint8_t)result[i], (uint8_t)i);
+		for (int i = 0; i < length; i++)
+			ASSERT_EQ(result[i], (uint8_t)i);
 
 	});
 
@@ -563,6 +563,8 @@ TEST(TestClient, ClientPcieRead) {
 	ASSERT_EQ(tport_request.t_proto, PCIE_PROTO_TLP);
 	ASSERT_EQ(tport_request.t_tlp.dl_tlp.tlp_fmt, PCIE_TLP_MRD32 >> 5);
 	ASSERT_EQ(tport_request.t_tlp.dl_tlp.tlp_type, PCIE_TLP_MRD32 & 0x1F);
+	ASSERT_EQ(tport_request.t_tlp.dl_tlp.tlp_length_hi, 0);
+	ASSERT_EQ(tport_request.t_tlp.dl_tlp.tlp_length_lo, 10);
 	ASSERT_EQ(pcie_lcrc32_valid(&tport_request.t_tlp), true);
 	ASSERT_EQ(send_fake.call_count, 1);
 	ASSERT_EQ(recv_fake.call_count, 0);
@@ -575,7 +577,7 @@ TEST(TestClient, ClientPcieRead) {
 	ASSERT_EQ(tport_request2->t_tlp.dl_tlp.tlp_fmt, PCIE_TLP_CPLD >> 5);
 	ASSERT_EQ(tport_request2->t_tlp.dl_tlp.tlp_type, PCIE_TLP_CPLD & 0x1F);
 
-	for (int i = 0; i < 10 * 4; i++)
+	for (int i = 0; i < 40; i++)
 		ASSERT_EQ(tport_request2->t_tlp.dl_tlp.tlp_cpl.c_data[i], (uint8_t)i);
 
 	ASSERT_TRUE(pcie_lcrc32_valid(&tport_request2->t_tlp));
@@ -586,11 +588,13 @@ TEST(TestClient, ClientPcieRead) {
 
 	ASSERT_EQ(send_fake.call_count, 4);
 	ASSERT_EQ(recv_fake.call_count, 4);
+
+	free(tport_request2);
 }
 
 TEST(TestClient, ClientPcieWrite) {
 	struct client_t client;
-	struct pcie_transport tport_request = {0};
+	struct pcie_transport *tport_request = calloc(1, sizeof(struct pcie_transport) + 40);
 	int tport_response_send = 0;
 	uint8_t write_data[40];
 
@@ -600,7 +604,7 @@ TEST(TestClient, ClientPcieWrite) {
 	std::function<int(int sockfd, void *msg, size_t len, int flags)> custom_fakes_send [2] = {
 		// request
 		[&](int sockfd, void *msg, size_t len, int flags) -> int {
-			memcpy(&tport_request, msg, len);
+			memcpy(tport_request, msg, len);
 			return len;
 		},
 		// ACK/NACK
@@ -612,13 +616,13 @@ TEST(TestClient, ClientPcieWrite) {
 	std::function<int(int sockfd, void *msg, size_t len, int flags)> custom_fakes_recv [2] = {
 		// request
 		[&](int sockfd, void *msg, size_t len, int flags) -> int {
-			memcpy(msg, &tport_request, len);
+			memcpy(msg, tport_request, len);
 			tport_response_send += len;
 			return len;
 		},
 		// request part 2
 		[&](int sockfd, void *msg, size_t len, int flags) -> int {
-			memcpy(msg, ((uint8_t*)(&tport_request)) + tport_response_send, len);
+			memcpy(msg, ((uint8_t*)tport_request) + tport_response_send, len);
 			tport_response_send += len;
 			return len;
 		},
@@ -632,19 +636,20 @@ TEST(TestClient, ClientPcieWrite) {
 	client_create(&client, 10);
 	pcie_register_write_cb(&client, [](uint64_t addr, const void *data, int length)
 	{
-		for (int i = 0; i < length * 4; i++) {
-			ASSERT_EQ(*(((uint8_t *)data) + i), i);
+		ASSERT_EQ(length, 40);
+		for (int i = 0; i < length; i++) {
+			ASSERT_EQ(((uint8_t *)data)[i], i);
 		}
 		return;
 	});
 
-	int rc = pcie_write(&client, 0x1234, write_data, 10);
+	int rc = pcie_write(&client, 0x1234, write_data, 40);
 
 	ASSERT_EQ(rc, 0);
-	ASSERT_EQ(tport_request.t_proto, PCIE_PROTO_TLP);
-	ASSERT_EQ(tport_request.t_tlp.dl_tlp.tlp_fmt, PCIE_TLP_MWR32 >> 5);
-	ASSERT_EQ(tport_request.t_tlp.dl_tlp.tlp_type, PCIE_TLP_MWR32 & 0x1F);
-	ASSERT_EQ(pcie_lcrc32_valid(&tport_request.t_tlp), true);
+	ASSERT_EQ(tport_request->t_proto, PCIE_PROTO_TLP);
+	ASSERT_EQ(tport_request->t_tlp.dl_tlp.tlp_fmt, PCIE_TLP_MWR32 >> 5);
+	ASSERT_EQ(tport_request->t_tlp.dl_tlp.tlp_type, PCIE_TLP_MWR32 & 0x1F);
+	ASSERT_EQ(pcie_lcrc32_valid(&tport_request->t_tlp), true);
 	ASSERT_EQ(send_fake.call_count, 1);
 	ASSERT_EQ(recv_fake.call_count, 0);
 
@@ -654,4 +659,6 @@ TEST(TestClient, ClientPcieWrite) {
 
 	ASSERT_EQ(send_fake.call_count, 2);
 	ASSERT_EQ(recv_fake.call_count, 2);
+
+	free(tport_request);
 }
