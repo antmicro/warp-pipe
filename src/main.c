@@ -65,7 +65,15 @@ int main(int argc, char *argv[])
 			server.addr_family = (c == '4' ? AF_INET : AF_INET6);
 			break;
 		default:  /* '?' */
-			fprintf(stderr, "Usage: %s [-4|-6] [-c] [-a <addr>] [-p <port>]\n", *argv);
+			fprintf(stderr,
+				"Usage: %s [-4|-6] [-c] [-a <addr>] [-p <port>]\n"
+				"\n"
+				"Options:\n"
+				" -4|-6      force IPv4/IPv6 (default: system preference)\n"
+				" -c         client mode (default: server mode),\n"
+				" -a <addr>  server address (default: wildcard address for server, loopback address for client),\n"
+				" -p <port>  server port (default: " SERVER_PORT_NUM "),\n"
+				"\n", *argv);
 			return 1;
 		}
 	}
