@@ -73,6 +73,7 @@ set(pcie_comm_cflags
 set(pcie_comm_test_cflags
   -fprofile-arcs
   -ftest-coverage
+  -fsanitize=address
 )
 
 add_executable(server
@@ -102,4 +103,4 @@ target_compile_options(server-tests
     ${pcie_comm_test_cflags}
 )
 
-set_target_properties(server-tests PROPERTIES LINK_FLAGS "--coverage")
+set_target_properties(server-tests PROPERTIES LINK_FLAGS "--coverage -fsanitize=address")
