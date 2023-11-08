@@ -68,24 +68,6 @@ int client_send_pcie_transport(struct client_t *client, struct pcie_transport *t
 	return n;
 }
 
-void client_cpl(struct client_t *client, const struct pcie_tlp *pkt, const void *data, int length)
-{
-	struct pcie_transport *tport = calloc(1, sizeof(struct pcie_transport) + length);
-
-	tport->t_proto = PCIE_PROTO_TLP;
-	tport->t_tlp.dl_tlp.tlp_fmt = PCIE_TLP_CPLD >> 5;
-	tport->t_tlp.dl_tlp.tlp_type = PCIE_TLP_CPLD & 0x1F;
-	tport->t_tlp.dl_tlp.tlp_length_hi = pkt->tlp_length_hi;
-	tport->t_tlp.dl_tlp.tlp_length_lo = pkt->tlp_length_lo;
-	tport->t_tlp.dl_tlp.tlp_cpl.c_tag = pkt->tlp_req.r_tag;
-	memcpy(tport->t_tlp.dl_tlp.tlp_cpl.c_data, data, length);
-
-	// TODO: check status and resend if fail
-	client_send_pcie_transport(client, tport);
-
-	free(tport);
-}
-
 void handle_memory_read_request(struct client_t *client, const struct pcie_tlp *pkt)
 {
 	syslog(LOG_DEBUG, "Got read request TLP");
@@ -96,9 +78,25 @@ void handle_memory_read_request(struct client_t *client, const struct pcie_tlp *
 	int data_len = tlp_data_length(pkt);
 	uint64_t addr = tlp_req_get_addr(pkt);
 
-	const void *response_data = client->pcie_read_cb(addr, data_len * 4);
+	struct pcie_transport *tport = calloc(1, sizeof(struct pcie_transport) + data_len * 4);
+	struct pcie_tlp *tlp = &tport->t_tlp.dl_tlp;
 
-	client_cpl(client, pkt, response_data, data_len * 4);
+	tport->t_proto = PCIE_PROTO_TLP;
+	tlp->tlp_fmt = PCIE_TLP_CPLD >> 5;
+	tlp->tlp_type = PCIE_TLP_CPLD & 0x1F;
+	tlp->tlp_length_hi = pkt->tlp_length_hi;
+	tlp->tlp_length_lo = pkt->tlp_length_lo;
+	tlp->tlp_cpl.c_tag = pkt->tlp_req.r_tag;
+
+	int read_error = client->pcie_read_cb(addr, tlp->tlp_cpl.c_data, data_len * 4);
+
+	if (read_error)
+		tlp->tlp_fmt &= ~PCIE_TLP_FMT_DATA;  // send Cpl instead of CplD to indicate failure
+
+	// TODO: check status and resend if fail
+	client_send_pcie_transport(client, tport);
+
+	free(tport);
 }
 
 void handle_memory_write_request(struct client_t *client, const struct pcie_tlp *pkt)
@@ -160,7 +158,7 @@ void handle_tlp(struct client_t *client, const struct pcie_tlp *pkt)
 	}
 }
 
-void client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqno)
+int client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqno)
 {
 	struct pcie_transport tport = {
 		.t_proto = PCIE_PROTO_DLLP,
@@ -173,10 +171,10 @@ void client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqn
 		},
 	};
 
-	if (client_send_pcie_transport(client, &tport) == -1) {
-		client->active = false;
-		return;
-	}
+	if (client_send_pcie_transport(client, &tport) == -1)
+		return -1;
+
+	return 0;
 }
 
 void client_read(struct client_t *client)
@@ -289,7 +287,6 @@ int pcie_read(struct client_t *client, uint64_t addr, int length, pcie_completio
 	client->pcie_completion_cb[client->pcie_read_tag] = pcie_completion_cb;
 
 	return 0;
-
 }
 
 int pcie_write(struct client_t *client, uint64_t addr, const void *data, int length)

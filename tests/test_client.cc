@@ -335,7 +335,7 @@ TEST(TestClient, ClientReadTLPCPLFail) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes, 2);
 
 	client_create(&client, 10);
-	pcie_register_read_cb(&client, [](uint64_t addr, int length) { static uint8_t result[4096]; return (const void *)result; });
+	pcie_register_read_cb(&client, [](uint64_t addr, void *data, int length) { return 0; });
 	client_read(&client);
 
 	EXPECT_EQ(total_sent, 19);
@@ -477,7 +477,7 @@ TEST(TestClient, ClientPcieRead) {
 	struct client_t client;
 	struct pcie_transport tport_request = {0};
 	int tport_request_recv = 0;
-	struct pcie_transport *tport_request2 = malloc(sizeof(struct pcie_transport) + 40);
+	struct pcie_transport *tport_request2 = (struct pcie_transport *)malloc(sizeof(struct pcie_transport) + 40);
 	int tport_response_send = 0;
 	int total_sent2 = 0;
 	int total_sent_rec = 0;
@@ -538,14 +538,14 @@ TEST(TestClient, ClientPcieRead) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 4);
 
 	client_create(&client, 10);
-	pcie_register_read_cb(&client, [](uint64_t addr, int length)
+	pcie_register_read_cb(&client, [](uint64_t addr, void *data, int length)
 	{
-		static uint8_t result[4096];
-		memset(result, 0, length);
+		uint8_t *result = (uint8_t*)data;
+		memset(data, 0, length);
 		for (int i = 0; i < length; i++) {
 			result[i] = (uint8_t)i;
 		}
-		return (const void *)result;
+		return 0;
 	});
 
 	int rc = pcie_read(&client, 0x1234, 40, [](const struct completion_status_t completion_status, const void *data, int length)
@@ -556,7 +556,6 @@ TEST(TestClient, ClientPcieRead) {
 
 		for (int i = 0; i < length; i++)
 			ASSERT_EQ(result[i], (uint8_t)i);
-
 	});
 
 	ASSERT_EQ(rc, 0);
@@ -594,7 +593,7 @@ TEST(TestClient, ClientPcieRead) {
 
 TEST(TestClient, ClientPcieWrite) {
 	struct client_t client;
-	struct pcie_transport *tport_request = calloc(1, sizeof(struct pcie_transport) + 40);
+	struct pcie_transport *tport_request = (struct pcie_transport *)calloc(1, sizeof(struct pcie_transport) + 40);
 	int tport_response_send = 0;
 	uint8_t write_data[40];
 
