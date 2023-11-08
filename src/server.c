@@ -85,8 +85,10 @@ static int server_accept(struct server_t *server)
 
 	if (server->listen) {
 		fd = accept(server->fd, (struct sockaddr *)&sock_addr, &sock_addr_len);
-		if (fd == -1)
-			return fd;
+		if (fd == -1) {
+			perror("accept");
+			return -1;
+		}
 
 		ret = getnameinfo((struct sockaddr *)&sock_addr, sock_addr_len, host, sizeof(host), port, sizeof(port), NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {

@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 			server.addr_family = (c == '4' ? AF_INET : AF_INET6);
 			break;
 		default:  /* '?' */
-			fprintf(stderr, "Usage: %s [-c] [-a <addr>] [-p <port>]\n", *argv);
+			fprintf(stderr, "Usage: %s [-4|-6] [-c] [-a <addr>] [-p <port>]\n", *argv);
 			return 1;
 		}
 	}
