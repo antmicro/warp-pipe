@@ -87,4 +87,5 @@ TEST(TestServer, ServerLoopEmpty) {
 
 	server_create(&server);
 	server_loop(&server);
+	server_disconnect_clients(&server, NULL);
 }

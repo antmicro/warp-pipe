@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <syslog.h>
@@ -41,83 +42,114 @@ void handle_dllp(struct client_t *client, const struct pcie_dllp *pkt)
 	}
 }
 
-void client_cpl(struct client_t *client, const struct pcie_tlp *pkt, const void *data, int length)
+int client_send_pcie_transport(struct client_t *client, struct pcie_transport *tport)
 {
-	client->seqno++;
-	struct pcie_transport tport = {
-		.t_proto = PCIE_PROTO_TLP,
-		.t_tlp = {
-			.dl_seqno_hi = client->seqno >> 8,
-			.dl_seqno_lo = client->seqno & 0xff,
-			.dl_tlp = *pkt,
-		},
-	};
-	tport.t_tlp.dl_tlp.tlp_fmt = PCIE_TLP_CPLD >> 5;
-	tport.t_tlp.dl_tlp.tlp_type = PCIE_TLP_CPLD & 0x1F;
-	int headerlen = tport.t_tlp.dl_tlp.tlp_cpl.c_data - (uint8_t *)&tport;
-	int n = send(client->fd, &tport, headerlen, MSG_MORE);
+	int packet_length = 1 + sizeof(tport->t_dllp);
 
-	if (n < headerlen) {
-		syslog(LOG_ERR, "Sending TLP: %s. Disconnecting.",
+	if (tport->t_proto == PCIE_PROTO_TLP) {
+		client->seqno++;
+		tport->t_tlp.dl_seqno_hi = client->seqno >> 8;
+		tport->t_tlp.dl_seqno_lo = client->seqno & 0xff;
+		pcie_lcrc32(&tport->t_tlp);
+		packet_length += tlp_total_length(&tport->t_tlp.dl_tlp);
+	} else if (tport->t_proto == PCIE_PROTO_DLLP) {
+		pcie_crc16(&tport->t_dllp);
+	}
+
+	int n = send(client->fd, tport, packet_length, 0);
+
+	if (n != packet_length) {
+		syslog(LOG_ERR, "Sending transport packet: %s. Disconnecting.",
 		       n < 0 ? strerror(errno) : "unexpected EOF");
 		client->active = false;
+		return -1;
+	}
+	syslog(LOG_DEBUG, "Send pcie transport length: %d", packet_length);
+	return n;
+}
+
+void handle_memory_read_request(struct client_t *client, const struct pcie_tlp *pkt)
+{
+	syslog(LOG_DEBUG, "Got read request TLP");
+	if (!client->pcie_read_cb) {
+		syslog(LOG_ERR, "Completer is missing pcie_read callback. Please register pcie_read function using `pcie_register_read_cb` before requesting memory read.");
 		return;
 	}
-	int sent = 0;
+	int data_len = tlp_data_length(pkt);
+	uint64_t addr = tlp_req_get_addr(pkt);
 
-	while (sent < length) {
-		n = send(client->fd, data + sent, length - sent, MSG_MORE);
-		if (n <= 0) {
-			syslog(LOG_ERR, "Sending TLP: %s. Disconnecting.",
-			       n < 0 ? strerror(errno) : "unexpected EOF");
-			client->active = false;
-			return;
-		}
-		sent += n;
-	}
+	struct pcie_transport *tport = calloc(1, sizeof(struct pcie_transport) + data_len * 4);
+	struct pcie_tlp *tlp = &tport->t_tlp.dl_tlp;
 
-	uint32_t crc = crc32p(&tport.t_tlp, tport.t_tlp.dl_tlp.tlp_cpl.c_data, 0xffffffff, TLP_LCRC32_POLY);
+	tport->t_proto = PCIE_PROTO_TLP;
+	tlp->tlp_fmt = PCIE_TLP_CPLD >> 5;
+	tlp->tlp_type = PCIE_TLP_CPLD & 0x1F;
+	tlp->tlp_length_hi = pkt->tlp_length_hi;
+	tlp->tlp_length_lo = pkt->tlp_length_lo;
+	tlp->tlp_cpl.c_tag = pkt->tlp_req.r_tag;
 
-	crc = ~crc32p(data, data + length, crc, TLP_LCRC32_POLY);
+	int read_error = client->pcie_read_cb(addr, tlp->tlp_cpl.c_data, data_len * 4);
 
-	uint8_t crc_data[4];
+	if (read_error)
+		tlp->tlp_fmt &= ~PCIE_TLP_FMT_DATA;  // send Cpl instead of CplD to indicate failure
 
-	for (int i = 0; i < 4; i++) {
-		crc_data[i] = crc & 0xff;
-		crc = crc >> 8;
-	}
+	// TODO: check status and resend if fail
+	client_send_pcie_transport(client, tport);
 
-	n = send(client->fd, crc_data, 4, 0);
-	if (n < 4) {
-		syslog(LOG_ERR, "Sending TLP: %s. Disconnecting.",
-		       n < 0 ? strerror(errno) : "unexpected EOF");
-		client->active = false;
+	free(tport);
+}
+
+void handle_memory_write_request(struct client_t *client, const struct pcie_tlp *pkt)
+{
+	syslog(LOG_DEBUG, "Got write request TLP");
+	if (!client->pcie_write_cb) {
+		syslog(LOG_ERR, "Completer is missing pcie_write callback. Please register pcie_write function using `pcie_register_write_cb` before requesting memory write.");
 		return;
 	}
+	int data_len = tlp_data_length(pkt) * 4;
+	uint64_t addr = tlp_req_get_addr(pkt);
+
+	const void *data = pkt->tlp_fmt & PCIE_TLP_FMT_4DW ? pkt->tlp_req.r_data64 : pkt->tlp_req.r_data32;
+
+	client->pcie_write_cb(addr, data, data_len);
+}
+
+void handle_completion(struct client_t *client, const struct pcie_tlp *pkt)
+{
+	struct completion_status_t completion_status;
+
+	completion_status.error_code = 0;
+
+	syslog(LOG_DEBUG, "Got completion TLP");
+	if (client->pcie_completion_cb[pkt->tlp_cpl.c_tag] == NULL) {
+		syslog(LOG_ERR, "Couldn't find read request for completion with tag: %d", pkt->tlp_req.r_tag);
+		return;
+	}
+
+	int data_len = tlp_data_length(pkt) * 4;
+
+	client->pcie_completion_cb[pkt->tlp_cpl.c_tag](completion_status, pkt->tlp_cpl.c_data, data_len);
+	client->pcie_completion_cb[pkt->tlp_cpl.c_tag] = NULL;
 }
 
 void handle_tlp(struct client_t *client, const struct pcie_tlp *pkt)
 {
-	int data_len = tlp_data_length(pkt);
-
 	switch ((enum pcie_tlp_type)(pkt->tlp_fmt << 5 | pkt->tlp_type)) {
 	case PCIE_TLP_IORD:
 	case PCIE_TLP_MRD32:
 	case PCIE_TLP_MRD64:
-		(void)pkt->tlp_req.r_address32;
-		syslog(LOG_DEBUG, "Got read request TLP");
-		client_cpl(client, pkt, "\xff\xff\xff\xff", data_len * 4);  /* TODO: call a handler */
+		handle_memory_read_request(client, pkt);
 		break;
 	case PCIE_TLP_IOWR:
 	case PCIE_TLP_MWR32:
 	case PCIE_TLP_MWR64:
-		(void)pkt->tlp_req.r_data32;
-		syslog(LOG_DEBUG, "Got write request TLP");
+		handle_memory_write_request(client, pkt);
 		break;
 	case PCIE_TLP_CPL:
+		/* no data, used for IO, configuration write, read completition with error */
+		break;
 	case PCIE_TLP_CPLD:
-		(void)pkt->tlp_cpl.c_data;
-		syslog(LOG_DEBUG, "Got completion TLP");
+		handle_completion(client, pkt);
 		break;
 	case PCIE_TLP_MRDLK32:
 	case PCIE_TLP_MRDLK64:
@@ -126,7 +158,7 @@ void handle_tlp(struct client_t *client, const struct pcie_tlp *pkt)
 	}
 }
 
-void client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqno)
+int client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqno)
 {
 	struct pcie_transport tport = {
 		.t_proto = PCIE_PROTO_DLLP,
@@ -139,16 +171,10 @@ void client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqn
 		},
 	};
 
-	pcie_crc16(&tport.t_dllp);
+	if (client_send_pcie_transport(client, &tport) == -1)
+		return -1;
 
-	int n = send(client->fd, &tport, 1 + sizeof(struct pcie_dllp), 0);
-
-	if (n != 1 + sizeof(struct pcie_dllp)) {
-		syslog(LOG_ERR, "Sending DLLP: %s. Disconnecting.",
-		       n < 0 ? strerror(errno) : "unexpected EOF");
-		client->active = false;
-		return;
-	}
+	return 0;
 }
 
 void client_read(struct client_t *client)
@@ -172,6 +198,7 @@ void client_read(struct client_t *client)
 		break;
 	case PCIE_PROTO_TLP:
 		{
+			syslog(LOG_DEBUG, "Got TLP packet");
 			int total = tlp_total_length(&tport->t_tlp.dl_tlp);
 
 			if (total < 0) {  // error
@@ -180,6 +207,7 @@ void client_read(struct client_t *client)
 				return;
 			}
 			total += 7;  // 7 = 1B proto + 2B DL header + 4B DL LCRC32
+			syslog(LOG_DEBUG, "Recieved TLP packed len: %d", total + len);
 
 			assert(total <= CLIENT_BUFFER_SIZE);
 			while (len < total) {
@@ -214,4 +242,71 @@ void client_create(struct client_t *client, int client_fd)
 	client->fd = client_fd;
 	client->seqno = 0;
 	client->active = true;
+	client->pcie_read_cb = NULL;
+	client->pcie_write_cb = NULL;
+	client->pcie_read_tag = 0;
+
+	memset(client->pcie_completion_cb, 0, sizeof(pcie_completion_cb_t) * 32);
+}
+
+void pcie_register_read_cb(struct client_t *client, pcie_read_cb_t pcie_read_cb)
+{
+	client->pcie_read_cb = pcie_read_cb;
+}
+
+void pcie_register_write_cb(struct client_t *client, pcie_write_cb_t pcie_write_cb)
+{
+	client->pcie_write_cb = pcie_write_cb;
+}
+
+int pcie_read(struct client_t *client, uint64_t addr, int length, pcie_completion_cb_t pcie_completion_cb)
+{
+	struct pcie_transport tport = {
+		.t_proto = PCIE_PROTO_TLP,
+		.t_tlp = {
+			.dl_tlp = {
+				.tlp_fmt = PCIE_TLP_MRD64 >> 5,
+				.tlp_type = PCIE_TLP_MRD64 & 0x1F,
+				.tlp_req = {
+					.r_tag = client->pcie_read_tag++,
+				}
+			},
+		},
+	};
+
+	tlp_req_set_addr(&tport.t_tlp.dl_tlp, addr, length);
+
+	if (client_send_pcie_transport(client, &tport) == -1)
+		return -1;
+
+	if (client->pcie_completion_cb[client->pcie_read_tag] != NULL)
+		syslog(LOG_ERR, "Tried to send read request with already used tag!");
+
+	client->pcie_completion_cb[client->pcie_read_tag] = pcie_completion_cb;
+
+	return 0;
+}
+
+int pcie_write(struct client_t *client, uint64_t addr, const void *data, int length)
+{
+	int rc = 0;
+	struct pcie_transport *tport = malloc(sizeof(struct pcie_transport) + ((length + (addr & 3) + 3) & ~3));
+
+	struct pcie_tlp *tlp = &tport->t_tlp.dl_tlp;
+
+	tport->t_proto = PCIE_PROTO_TLP;
+	tlp->tlp_fmt = PCIE_TLP_MWR64 >> 5;
+	tlp->tlp_type = PCIE_TLP_MWR64 & 0x1F;
+
+	tlp_req_set_addr(tlp, addr, length);
+
+	void *payload = tlp->tlp_fmt & PCIE_TLP_FMT_4DW ? tlp->tlp_req.r_data64 : tlp->tlp_req.r_data32;
+
+	memcpy(payload + (addr & 3), data, length);
+
+	rc = client_send_pcie_transport(client, tport);
+
+	free(tport);
+
+	return rc > 0 ? 0 : rc;
 }

@@ -33,17 +33,30 @@ enum pcie_dllp_type {
 	PCIE_DLLP_NOP = 0x31,
 };
 
+enum pcie_tlp_fmt {
+	PCIE_TLP_FMT_3DW = 0,
+	PCIE_TLP_FMT_4DW = 1,
+	PCIE_TLP_FMT_NODATA = 0,
+	PCIE_TLP_FMT_DATA = 2,
+
+	PCIE_TLP_FMT_3DW_NODATA = PCIE_TLP_FMT_3DW | PCIE_TLP_FMT_NODATA,
+	PCIE_TLP_FMT_4DW_NODATA = PCIE_TLP_FMT_4DW | PCIE_TLP_FMT_NODATA,
+	PCIE_TLP_FMT_3DW_DATA = PCIE_TLP_FMT_3DW | PCIE_TLP_FMT_DATA,
+	PCIE_TLP_FMT_4DW_DATA = PCIE_TLP_FMT_4DW | PCIE_TLP_FMT_DATA,
+	PCIE_TLP_FMT_PREFIX = 4,
+};
+
 enum pcie_tlp_type {
-	PCIE_TLP_MRD32 = 0x00,
-	PCIE_TLP_MRD64 = 0x20,
-	PCIE_TLP_MRDLK32 = 0x01,
-	PCIE_TLP_MRDLK64 = 0x21,
-	PCIE_TLP_MWR32 = 0x40,
-	PCIE_TLP_MWR64 = 0x60,
-	PCIE_TLP_IORD = 0x02,
-	PCIE_TLP_IOWR = 0x42,
-	PCIE_TLP_CPL = 0x0a,
-	PCIE_TLP_CPLD = 0x4a,
+	PCIE_TLP_MRD32 = PCIE_TLP_FMT_3DW_NODATA << 5 | 0x00,
+	PCIE_TLP_MRD64 = PCIE_TLP_FMT_4DW_NODATA << 5 | 0x00,
+	PCIE_TLP_MRDLK32 = PCIE_TLP_FMT_3DW_NODATA << 5 | 0x01,
+	PCIE_TLP_MRDLK64 = PCIE_TLP_FMT_4DW_NODATA << 5 | 0x01,
+	PCIE_TLP_MWR32 = PCIE_TLP_FMT_3DW_DATA << 5 | 0x00,
+	PCIE_TLP_MWR64 = PCIE_TLP_FMT_4DW_DATA << 5 | 0x00,
+	PCIE_TLP_IORD = PCIE_TLP_FMT_3DW_NODATA << 5 | 0x02,
+	PCIE_TLP_IOWR = PCIE_TLP_FMT_3DW_DATA << 5 | 0x02,
+	PCIE_TLP_CPL = PCIE_TLP_FMT_3DW_NODATA << 5 | 0x0a,
+	PCIE_TLP_CPLD = PCIE_TLP_FMT_3DW_DATA << 5 | 0x0a,
 };
 
 union pcie_id {
@@ -223,8 +236,10 @@ struct pcie_dltlp {
 #else
 # error	"__BYTE_ORDER is neither __LITTLE_ENDIAN nor __BIG_ENDIAN. Please fix <bits/endian.h>"
 #endif
-	struct pcie_tlp dl_tlp;
-	/* uint32_t lcrc; */
+	union {
+		struct pcie_tlp dl_tlp;
+		uint8_t __pad_for_crc32[20];
+	};
 };
 
 struct pcie_transport {
@@ -243,9 +258,11 @@ struct pcie_transport {
 
 static_assert(sizeof(struct pcie_dllp) == 6);
 static_assert(sizeof(struct pcie_tlp) == 16);
-static_assert(sizeof(struct pcie_transport) == 19);
+static_assert(sizeof(struct pcie_transport) == 23);
 
 int tlp_data_length(const struct pcie_tlp *pkt);
 int tlp_total_length(const struct pcie_tlp *pkt);
+void tlp_req_set_addr(struct pcie_tlp *pkt, uint64_t addr, int length);
+uint64_t tlp_req_get_addr(const struct pcie_tlp *pkt);
 
 #endif /* PCIE_COMM_PROTO_H */
