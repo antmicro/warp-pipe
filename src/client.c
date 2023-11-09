@@ -247,8 +247,6 @@ void client_create(struct client_t *client, int client_fd)
 	client->pcie_read_tag = 0;
 
 	memset(client->pcie_completion_cb, 0, sizeof(pcie_completion_cb_t) * 32);
-
-	syslog(LOG_NOTICE, "New client connected!");
 }
 
 void pcie_register_read_cb(struct client_t *client, pcie_read_cb_t pcie_read_cb)

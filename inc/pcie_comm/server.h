@@ -18,6 +18,7 @@
 #ifndef PCIE_COMM_SERVER_H
 #define PCIE_COMM_SERVER_H
 
+#include <stdbool.h>
 #include <sys/select.h>
 
 #include <pcie_comm/client.h>
@@ -25,6 +26,21 @@
 struct server_t {
 	/* server's socket fd */
 	int fd;
+
+	/* whether the server is in listening mode */
+	bool listen;
+
+	/* quit request */
+	bool quit;
+
+	/* server address family */
+	int addr_family;
+
+	/* server host address */
+	const char *host;
+
+	/* server port */
+	const char *port;
 
 	/* track max fd number for select */
 	int max_fd;
