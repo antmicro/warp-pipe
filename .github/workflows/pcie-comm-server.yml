@@ -40,3 +40,24 @@ jobs:
           chmod +x checkpatch.pl
       - run: find . -iname '*.[ch]' -not -path "./build/*" -and -not -path "./tests/*" | xargs ./checkpatch.pl -f --no-tree
 
+  Zephyr-Samples:
+    runs-on: ubuntu-22.04
+    container: ghcr.io/zephyrproject-rtos/ci:v0.26.2
+    env:
+      CMAKE_PREFIX_PATH: /opt/toolchains
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
+          tuttest zephyr-samples/pcie_scan/README.md pcie-scan-prep | bash -
+      - run: |
+          tuttest zephyr-samples/pcie_scan/README.md pcie-scan-build | bash -
+          tar czf pcie_scan.tar.gz build.pcie_scan
+      - run: |
+          tuttest zephyr-samples/pcie_nvme/README.md pcie-nvme-build | bash -
+          tar czf pcie_nvme.tar.gz build.pcie_nvme
+      - uses: actions/upload-artifact@v3
+        with:
+          path: |
+              ./pcie_scan.tar.gz
+              ./pcie_nvme.tar.gz
