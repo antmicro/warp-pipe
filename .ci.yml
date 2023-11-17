@@ -36,6 +36,31 @@ Build PCIe Communication Server:
       - coverage.tar.gz
     when: always
 
+Build Zephyr Samples:
+  stage: build
+  extends: .job_template
+  image: "d2s://external/docker/zephyrprojectrtos/ci:v0.26.5"
+  variables:
+    CMAKE_PREFIX_PATH: /opt/toolchains
+
+  script:
+    - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
+    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-prep | bash -
+
+    # PCIe Scan sample
+    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-build | bash -
+    - tar czf pcie_scan.tar.gz build.pcie_scan
+
+    # PCIe NVMe sample
+    - tuttest zephyr-samples/pcie_nvme/README.md pcie-nvme-build | bash -
+    - tar czf pcie_nvme.tar.gz build.pcie_nvme
+
+  artifacts:
+    paths:
+      - pcie_scan.tar.gz
+      - pcie_nvme.tar.gz
+    when: always
+
 Checkpatch:
   stage: build
   extends: .job_template
