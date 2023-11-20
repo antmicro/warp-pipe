@@ -56,8 +56,10 @@ jobs:
       - run: |
           tuttest zephyr-samples/pcie_nvme/README.md pcie-nvme-build | bash -
           tar czf pcie_nvme.tar.gz build.pcie_nvme
+      - run: |
+          tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -
+          tar czf pcie_ivshmem.tar.gz build.pcie_ivshmem
       - uses: actions/upload-artifact@v3
         with:
           path: |
-              ./pcie_scan.tar.gz
-              ./pcie_nvme.tar.gz
+              ./pcie_*.tar.gz
