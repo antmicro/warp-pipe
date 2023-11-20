@@ -8,4 +8,6 @@ manifest:
       path: zephyr
       remote: zephyrproject-rtos
       revision: v3.5.0
-      import: true
+      import:
+        name-allowlist:
+          - cmsis
