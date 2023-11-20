@@ -55,10 +55,13 @@ Build Zephyr Samples:
     - tuttest zephyr-samples/pcie_nvme/README.md pcie-nvme-build | bash -
     - tar czf pcie_nvme.tar.gz build.pcie_nvme
 
+    # PCIe IVSHMEM sample
+    - tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -
+    - tar czf pcie_ivshmem.tar.gz build.pcie_ivshmem
+
   artifacts:
     paths:
-      - pcie_scan.tar.gz
-      - pcie_nvme.tar.gz
+      - pcie_*.tar.gz
     when: always
 
 Checkpatch:
