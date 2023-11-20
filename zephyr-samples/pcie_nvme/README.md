@@ -9,7 +9,7 @@ Use the following commands to prepare the working environment:
 <!-- name="pcie-nvme-prep" -->
 ```
 west init --local --mf zephyr-samples/warp-pipe-zephyr.yml
-west update
+west update -o=--depth=1 -n
 west zephyr-export
 ```
 
