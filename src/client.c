@@ -89,7 +89,7 @@ void handle_memory_read_request(struct client_t *client, const struct pcie_tlp *
 	tlp->tlp_length_lo = pkt->tlp_length_lo;
 	tlp->tlp_cpl.c_tag = pkt->tlp_req.r_tag;
 
-	int read_error = client->pcie_read_cb(addr, tlp->tlp_cpl.c_data, data_len * 4);
+	int read_error = client->pcie_read_cb(addr, tlp->tlp_cpl.c_data, data_len * 4, client->opaque);
 
 	if (read_error)
 		tlp->tlp_fmt &= ~PCIE_TLP_FMT_DATA;  // send Cpl instead of CplD to indicate failure
@@ -112,7 +112,7 @@ void handle_memory_write_request(struct client_t *client, const struct pcie_tlp 
 
 	const void *data = pkt->tlp_fmt & PCIE_TLP_FMT_4DW ? pkt->tlp_req.r_data64 : pkt->tlp_req.r_data32;
 
-	client->pcie_write_cb(addr, data, data_len);
+	client->pcie_write_cb(addr, data, data_len, client->opaque);
 }
 
 void handle_completion(struct client_t *client, const struct pcie_tlp *pkt)

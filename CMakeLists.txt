@@ -43,7 +43,7 @@ if (NOT DEFINED ZEPHYR_BASE)
 
   # find dependencies
   find_program(LCOV lcov REQUIRED)
-  find_program(GENTHML genhtml REQUIRED)
+  find_program(GENHTML genhtml REQUIRED)
 
   # include paths
   include_directories(
@@ -86,6 +86,39 @@ if (NOT DEFINED ZEPHYR_BASE)
     PRIVATE
       ${pcie_comm_cflags}
   )
+
+  set(PACKAGE_SOVERSION 0)
+  set(PACKAGE_VERSION ${PACKAGE_SOVERSION}.0.0)
+
+  add_library(pcied SHARED
+    ${pcie_comm_src}
+  )
+  target_compile_options(pcied
+    PRIVATE
+      ${pcie_comm_cflags}
+  )
+  set_target_properties(pcied PROPERTIES
+    VERSION ${PACKAGE_VERSION}
+    SOVERSION ${PACKAGE_SOVERSION}
+  )
+
+  include(GNUInstallDirs)
+  set(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+  set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+  set(prefix ${CMAKE_INSTALL_PREFIX})
+  configure_file(pcied.pc.in ${CMAKE_CURRENT_BINARY_DIR}/pcied.pc @ONLY)
+
+  install(DIRECTORY inc/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/pcied.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+  )
+  install(FILES
+    LICENSE
+    README.md
+    DESTINATION ${CMAKE_INSTALL_DOCDIR}
+  )
+  install(TARGETS pcied LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
   add_executable(server-tests
     ${pcie_comm_src}

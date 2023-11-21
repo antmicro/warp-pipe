@@ -74,7 +74,7 @@ int8_t memory[] = {
 
 static int move;
 
-int pcie_read_cb_imp(uint64_t addr, void *data, int length)
+int pcie_read_cb_imp(uint64_t addr, void *data, int length, void *opaque)
 {
 	memcpy(data, memory + move, length);
 	move++;
