@@ -18,10 +18,14 @@
 #ifndef PCIE_COMM_SERVER_H
 #define PCIE_COMM_SERVER_H
 
-#include <stdbool.h>
 #include <sys/select.h>
 
+#include <stdbool.h>
+
 #include <pcie_comm/client.h>
+#include <pcie_comm/config.h>
+
+typedef void (*server_client_accept_cb_t)(struct client_t *client);
 
 struct server_t {
 	/* server's socket fd */
@@ -50,11 +54,15 @@ struct server_t {
 
 	/* client linked-list */
 	struct client_q clients;
+
+	/* called after new client is accepted */
+	server_client_accept_cb_t server_client_accept_cb;
 };
 
 int server_create(struct server_t *server);
 void server_loop(struct server_t *server);
 void server_disconnect_clients(struct server_t *server, bool
 		(*condition)(struct client_t *client));
+void server_register_accept_cb(struct server_t *server, server_client_accept_cb_t server_client_accept_cb);
 
 #endif /* PCIE_COMM_SERVER_H */

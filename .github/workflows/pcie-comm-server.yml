@@ -59,6 +59,11 @@ jobs:
       - run: |
           tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -
           tar czf pcie_ivshmem.tar.gz build.pcie_ivshmem
+      - run: |
+          tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build | bash -
+          tar czf pcie_dma.tar.gz build.pcie_dma
+          tuttest zephyr-samples/pcie_dma/README.md pcie-dma-memory-mock pcie-dma-net-setup pcie-dma-run pcie-dma-teardown | bash -
+
       - uses: actions/upload-artifact@v3
         with:
           path: |

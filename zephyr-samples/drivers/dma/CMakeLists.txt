@@ -1,0 +1,8 @@
+set(ZEPHYR_CURRENT_LIBRARY drivers__dma)
+zephyr_library_sources_ifdef(CONFIG_DMA_EMUL	dma_emul.c)
+zephyr_library_sources(../../../src/client.c)
+zephyr_library_sources(../../../src/crc.c)
+zephyr_library_sources(../../../src/proto.c)
+zephyr_library_sources(../../../src/server.c)
+zephyr_library_include_directories(${ZEPHYR_BASE}/include/zephyr/posix)
+zephyr_library_include_directories(../../../inc)
