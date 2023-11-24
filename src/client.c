@@ -15,11 +15,19 @@
  * limitations under the License.
  */
 
-#include <sys/socket.h>
+#include <pcie_comm/macro.h>
+
+#include ZEPHYR_INCLUDE(sys/socket.h)
+
+#ifndef __ZEPHYR__
+#include <syslog.h>
+#else
+/* ignore syslog calls */
+#define syslog(...)
+#endif
 
 #include <stdlib.h>
 #include <sys/types.h>
-#include <syslog.h>
 #include <string.h>
 #include <errno.h>
 

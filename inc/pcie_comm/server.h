@@ -18,7 +18,9 @@
 #ifndef PCIE_COMM_SERVER_H
 #define PCIE_COMM_SERVER_H
 
-#include <sys/select.h>
+#include <pcie_comm/macro.h>
+
+#include ZEPHYR_INCLUDE(sys/select.h)
 
 #include <stdbool.h>
 

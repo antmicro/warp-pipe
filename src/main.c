@@ -35,15 +35,6 @@ static struct server_t server = {
 	.quit = false,
 };
 
-static void handle_sigint(int signo)
-{
-	server.quit = true;
-	syslog(LOG_NOTICE, "Received SIGINT. " PRJ_NAME_LONG " will shut down.");
-
-	/* disconnect every user */
-	server_disconnect_clients(&server, NULL);
-}
-
 int main(int argc, char *argv[])
 {
 	int c;
@@ -81,9 +72,6 @@ int main(int argc, char *argv[])
 	/* syslog initialization */
 	setlogmask(LOG_UPTO(LOG_DEBUG));
 	openlog(PRJ_NAME_SHORT, LOG_CONS | LOG_NDELAY, LOG_USER);
-
-	/* signal initialization */
-	signal(SIGINT, handle_sigint);
 
 	/* server initialization */
 	syslog(LOG_NOTICE, "Starting " PRJ_NAME_LONG "...");
