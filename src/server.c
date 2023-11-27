@@ -17,14 +17,14 @@
 
 #include <netinet/in.h>
 #include <netdb.h>
-#include <stddef.h>
-#include <stdlib.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+
+#include <stddef.h>
+#include <stdlib.h>
 #include <syslog.h>
 #include <string.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <errno.h>
 
 #include <stdio.h>
@@ -72,7 +72,6 @@ static void server_read(struct server_t *server)
 			client_read(i->client);
 }
 
-
 static int server_accept(struct server_t *server)
 {
 	int fd, ret;
@@ -114,6 +113,8 @@ static int server_accept(struct server_t *server)
 	client_create(new_client, fd);
 	new_client_node->client = new_client;
 	TAILQ_INSERT_TAIL(&server->clients, new_client_node, next);
+	if (server->server_client_accept_cb)
+		server->server_client_accept_cb(new_client);
 
 	server_track_max_fd(server, fd);
 
@@ -125,12 +126,17 @@ fail:
 	return -1;
 }
 
+void server_register_accept_cb(struct server_t *server, server_client_accept_cb_t server_client_accept_cb)
+{
+	server->server_client_accept_cb = server_client_accept_cb;
+}
+
 int server_create(struct server_t *server)
 {
 	int fd_flags, ret;
 	char host[NI_MAXHOST];
 	char port[NI_MAXSERV];
-	int sfd;
+	int sfd = -1;
 
 	struct addrinfo  hints;
 	struct addrinfo  *result, *rp;
@@ -201,6 +207,10 @@ int server_create(struct server_t *server)
 
 	/* set up client linked list */
 	TAILQ_INIT(&server->clients);
+
+	/* When in client mode, create client node for itself */
+	if (!server->listen)
+		server_accept(server);
 
 	return 0;
 }

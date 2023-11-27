@@ -59,6 +59,13 @@ Build Zephyr Samples:
     - tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -
     - tar czf pcie_ivshmem.tar.gz build.pcie_ivshmem
 
+    # PCIe DMA sample
+    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build | bash -
+    - tar czf pcie_dma.tar.gz build.pcie_dma
+
+    # Run sample
+    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-memory-mock,pcie-dma-net-setup,pcie-dma-run,pcie-dma-teardown | bash -
+
   artifacts:
     paths:
       - pcie_*.tar.gz
@@ -79,4 +86,4 @@ Checkpatch:
     - chmod +x checkpatch.pl
 
     # Use xargs instead of find's -exec due to the status return code limitation in find
-    - find . -iname '*.[ch]' -not -path "./build/*" -and -not -path "./tests/*" | xargs ./checkpatch.pl -f --no-tree
+    - find . -iname '*.[ch]' -not -path "./build/*" -and -not -path "./tests/*" -and -not -path "./zephyr-samples/drivers/dma/*" | xargs ./checkpatch.pl -f --no-tree

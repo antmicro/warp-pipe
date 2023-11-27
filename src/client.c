@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include <sys/socket.h>
+
+#include <stdlib.h>
 #include <sys/types.h>
 #include <syslog.h>
-#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 
@@ -27,6 +27,7 @@
 #include <pcie_comm/config.h>
 #include <pcie_comm/proto.h>
 #include <pcie_comm/crc.h>
+#include <pcie_comm/config.h>
 
 void handle_dllp(struct client_t *client, const struct pcie_dllp *pkt)
 {
@@ -268,7 +269,7 @@ int pcie_read(struct client_t *client, uint64_t addr, int length, pcie_completio
 				.tlp_fmt = PCIE_TLP_MRD64 >> 5,
 				.tlp_type = PCIE_TLP_MRD64 & 0x1F,
 				.tlp_req = {
-					.r_tag = client->pcie_read_tag++,
+					.r_tag = ++client->pcie_read_tag,
 				}
 			},
 		},

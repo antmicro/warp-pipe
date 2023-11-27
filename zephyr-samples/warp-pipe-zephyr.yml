@@ -7,7 +7,9 @@ manifest:
     - name: zephyr
       path: zephyr
       remote: zephyrproject-rtos
-      revision: v3.5.0
+      revision: f89c5ddd1aaf0e4a5b6fd0a1397c5a72f1cba388
       import:
         name-allowlist:
           - cmsis
+          - mbedtls
+          - net-tools

@@ -1,0 +1,6 @@
+config DMA_EMUL
+        bool "Emulated DMA driver [EXPERIMENTAL]"
+        depends on DT_HAS_ZEPHYR_DMA_EMUL_ENABLED
+        select EXPERIMENTAL
+        help
+          Emulated DMA Driver
