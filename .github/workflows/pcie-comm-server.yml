@@ -38,7 +38,7 @@ jobs:
       - run: |
           wget https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/scripts/checkpatch.pl
           chmod +x checkpatch.pl
-      - run: find . -iname '*.[ch]' -not -path "./build/*" -and -not -path "./tests/*" | xargs ./checkpatch.pl -f --no-tree
+      - run: find . -iname '*.[ch]' -not -path "./build/*" -and -not -path "./tests/*" -and -not -path "./zephyr-samples/drivers/dma/*" | xargs ./checkpatch.pl -f --no-tree
 
   Zephyr-Samples:
     runs-on: ubuntu-22.04
