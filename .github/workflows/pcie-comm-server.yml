@@ -42,7 +42,9 @@ jobs:
 
   Zephyr-Samples:
     runs-on: ubuntu-22.04
-    container: ghcr.io/zephyrproject-rtos/ci:v0.26.2
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26.2
+      options: --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun
     env:
       CMAKE_PREFIX_PATH: /opt/toolchains
     steps:
