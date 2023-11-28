@@ -23,7 +23,7 @@ Build PCIe Communication Server:
     - python3 -m venv venv
     - source venv/bin/activate
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-    - tuttest README.md server-build | bash -
+    - tuttest README.md server-build | bash -o pipefail -
     
     - ./build/server-tests
     - ./scripts/coverage.sh
@@ -45,26 +45,26 @@ Build Zephyr Samples:
 
   script:
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-prep | bash -
+    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-prep | bash -o pipefail -
 
     # PCIe Scan sample
-    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-build | bash -
+    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-build | bash -o pipefail -
     - tar czf pcie_scan.tar.gz build.pcie_scan
 
     # PCIe NVMe sample
-    - tuttest zephyr-samples/pcie_nvme/README.md pcie-nvme-build | bash -
+    - tuttest zephyr-samples/pcie_nvme/README.md pcie-nvme-build | bash -o pipefail -
     - tar czf pcie_nvme.tar.gz build.pcie_nvme
 
     # PCIe IVSHMEM sample
-    - tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -
+    - tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -o pipefail -
     - tar czf pcie_ivshmem.tar.gz build.pcie_ivshmem
 
     # PCIe DMA sample
-    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build | bash -
+    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build | bash -o pipefail -
     - tar czf pcie_dma.tar.gz build.pcie_dma
 
     # Run sample
-    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-memory-mock,pcie-dma-net-setup,pcie-dma-run,pcie-dma-teardown | bash -
+    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-memory-mock,pcie-dma-net-setup,pcie-dma-run,pcie-dma-teardown | bash -o pipefail -
 
   artifacts:
     paths:
