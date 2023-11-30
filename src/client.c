@@ -89,7 +89,7 @@ void handle_memory_read_request(struct client_t *client, const struct pcie_tlp *
 	tlp->tlp_length_lo = pkt->tlp_length_lo;
 	tlp->tlp_cpl.c_tag = pkt->tlp_req.r_tag;
 
-	int read_error = client->pcie_read_cb(addr, tlp->tlp_cpl.c_data, data_len * 4);
+	int read_error = client->pcie_read_cb(addr, tlp->tlp_cpl.c_data, data_len * 4, client->opaque);
 
 	if (read_error)
 		tlp->tlp_fmt &= ~PCIE_TLP_FMT_DATA;  // send Cpl instead of CplD to indicate failure
@@ -112,7 +112,7 @@ void handle_memory_write_request(struct client_t *client, const struct pcie_tlp 
 
 	const void *data = pkt->tlp_fmt & PCIE_TLP_FMT_4DW ? pkt->tlp_req.r_data64 : pkt->tlp_req.r_data32;
 
-	client->pcie_write_cb(addr, data, data_len);
+	client->pcie_write_cb(addr, data, data_len, client->opaque);
 }
 
 void handle_completion(struct client_t *client, const struct pcie_tlp *pkt)
@@ -185,8 +185,10 @@ void client_read(struct client_t *client)
 
 	len = recv(client->fd, tport, 1 + sizeof(tport->t_dllp), 0);
 	if (len != 1 + sizeof(tport->t_dllp)) {
-		syslog(LOG_NOTICE, "Client disconnecting: %s.", len < 0 ? strerror(errno) : "graceful EOF");
-		client->active = false;
+		if (len != -1 || (errno != EAGAIN && errno != EWOULDBLOCK)) {
+			syslog(LOG_NOTICE, "Client disconnecting: %s.", len < 0 ? strerror(errno) : "graceful EOF");
+			client->active = false;
+		}
 		return;
 	}
 
@@ -262,6 +264,7 @@ void pcie_register_write_cb(struct client_t *client, pcie_write_cb_t pcie_write_
 
 int pcie_read(struct client_t *client, uint64_t addr, int length, pcie_completion_cb_t pcie_completion_cb)
 {
+	int tag = client->pcie_read_tag++;
 	struct pcie_transport tport = {
 		.t_proto = PCIE_PROTO_TLP,
 		.t_tlp = {
@@ -269,7 +272,7 @@ int pcie_read(struct client_t *client, uint64_t addr, int length, pcie_completio
 				.tlp_fmt = PCIE_TLP_MRD64 >> 5,
 				.tlp_type = PCIE_TLP_MRD64 & 0x1F,
 				.tlp_req = {
-					.r_tag = ++client->pcie_read_tag,
+					.r_tag = tag,
 				}
 			},
 		},
@@ -280,10 +283,10 @@ int pcie_read(struct client_t *client, uint64_t addr, int length, pcie_completio
 	if (client_send_pcie_transport(client, &tport) == -1)
 		return -1;
 
-	if (client->pcie_completion_cb[client->pcie_read_tag] != NULL)
+	if (client->pcie_completion_cb[tag] != NULL)
 		syslog(LOG_ERR, "Tried to send read request with already used tag!");
 
-	client->pcie_completion_cb[client->pcie_read_tag] = pcie_completion_cb;
+	client->pcie_completion_cb[tag] = pcie_completion_cb;
 
 	return 0;
 }

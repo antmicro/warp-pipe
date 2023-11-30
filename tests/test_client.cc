@@ -335,7 +335,7 @@ TEST(TestClient, ClientReadTLPCPLFail) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes, 2);
 
 	client_create(&client, 10);
-	pcie_register_read_cb(&client, [](uint64_t addr, void *data, int length) { return 0; });
+	pcie_register_read_cb(&client, [](uint64_t addr, void *data, int length, void *opaque) { return 0; });
 	client_read(&client);
 
 	EXPECT_EQ(total_sent, 19);
@@ -538,7 +538,7 @@ TEST(TestClient, ClientPcieRead) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 4);
 
 	client_create(&client, 10);
-	pcie_register_read_cb(&client, [](uint64_t addr, void *data, int length)
+	pcie_register_read_cb(&client, [](uint64_t addr, void *data, int length, void *opaque)
 	{
 		uint8_t *result = (uint8_t*)data;
 		memset(data, 0, length);
@@ -633,7 +633,7 @@ TEST(TestClient, ClientPcieWrite) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 2);
 
 	client_create(&client, 10);
-	pcie_register_write_cb(&client, [](uint64_t addr, const void *data, int length)
+	pcie_register_write_cb(&client, [](uint64_t addr, const void *data, int length, void *opaque)
 	{
 		ASSERT_EQ(length, 40);
 		for (int i = 0; i < length; i++) {
