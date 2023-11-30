@@ -29,6 +29,7 @@ FAKE_VALUE_FUNC(int, accept, int, struct sockaddr *, socklen_t *);
 FAKE_VALUE_FUNC(int, getsockname, int, struct sockaddr *, socklen_t *);
 FAKE_VALUE_FUNC(int, getpeername, int, struct sockaddr *, socklen_t *);
 FAKE_VALUE_FUNC(int, getnameinfo, struct sockaddr *, socklen_t *, char *, socklen_t, char *, socklen_t, int);
+FAKE_VALUE_FUNC(int, setsockopt, int, int, int,const void *, socklen_t);
 }
 
 TEST(TestServer, CreatesServer) {
@@ -38,9 +39,11 @@ TEST(TestServer, CreatesServer) {
 
 	RESET_FAKE(bind);
 	RESET_FAKE(socket);
+	RESET_FAKE(setsockopt);
 
 	bind_fake.return_val = 0;
 	socket_fake.return_val = 10;
+	setsockopt_fake.return_val = 0;
 
 	server_create(&server);
 

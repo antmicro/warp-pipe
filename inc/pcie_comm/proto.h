@@ -18,7 +18,7 @@
 #ifndef PCIE_COMM_PROTO_H
 #define PCIE_COMM_PROTO_H
 
-#include <bits/endian.h>
+#include <endian.h>
 #include <assert.h>
 #include <stdint.h>
 

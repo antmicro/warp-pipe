@@ -20,7 +20,7 @@
 #include <pcie_comm/server.h>
 #include <pcie_comm/config.h>
 
-#include <zephyr/net/net_ip.h>
+#include <sys/socket.h>
 
 #define DT_DRV_COMPAT zephyr_dma_emul
 
@@ -75,8 +75,8 @@ struct dma_emul_data {
 
 static struct server_t pcie_server = {
 	.listen = false,
-	.addr_family = AF_INET,
-	.host = CONFIG_NET_CONFIG_PEER_IPV4_ADDR,
+	.addr_family = AF_UNSPEC,
+	.host = CONFIG_PCIE_PIPE_SERVER,
 	.port = SERVER_PORT_NUM,
 	.quit = false,
 };

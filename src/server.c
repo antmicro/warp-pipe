@@ -26,12 +26,48 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/signal.h>
 
 #include <stdio.h>
 
 #include <pcie_comm/server.h>
 #include <pcie_comm/client.h>
 #include <pcie_comm/config.h>
+
+#ifndef NI_MAXSERV
+#define NI_MAXSERV 32
+#endif
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif
+
+typedef void (*sig_t) (int);
+static sig_t sigint_handler;
+static struct server_t *pcie_server;
+
+static void handle_sigint(int signo)
+{
+	/* if previously we would ignore signal, ignore this one too */
+	if (sigint_handler == SIG_IGN)
+		return;
+	syslog(LOG_NOTICE, "Received SIGINT. " PRJ_NAME_LONG " will shut down.");
+	if (pcie_server) {
+		pcie_server->quit = true;
+
+		/* disconnect every user */
+		server_disconnect_clients(pcie_server, NULL);
+		close(pcie_server->fd);
+	}
+
+	/* reset signal handler and raise it again */
+	if (sigint_handler == SIG_DFL) {
+		signal(signo, SIG_DFL);
+		raise(signo);
+		signal(signo, handle_sigint);
+	/* call previous handler */
+	} else if (sigint_handler)
+		sigint_handler(signo);
+}
 
 static inline void server_track_max_fd(struct server_t *server, int new_fd)
 {
@@ -137,9 +173,13 @@ int server_create(struct server_t *server)
 	char host[NI_MAXHOST];
 	char port[NI_MAXSERV];
 	int sfd = -1;
+	int enable = 1;
 
 	struct addrinfo  hints;
 	struct addrinfo  *result, *rp;
+
+	/* save current server for signal handler */
+	pcie_server = server;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = server->addr_family;
@@ -159,6 +199,17 @@ int server_create(struct server_t *server)
 		sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if (sfd == -1)
 			continue;
+
+		if (setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) != 0) {
+			perror("Failed to set SO_REUSEADDR: ");
+			return -1;
+		}
+#ifdef SO_REUSEPORT
+		if (setsockopt(sfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) != 0) {
+			perror("Failed to set SO_REUSEPORT: ");
+			return -1;
+		}
+#endif
 
 		if ((server->listen ? bind : connect)(sfd, rp->ai_addr, rp->ai_addrlen) != -1) {
 			if (server->listen) {
@@ -211,6 +262,8 @@ int server_create(struct server_t *server)
 	/* When in client mode, create client node for itself */
 	if (!server->listen)
 		server_accept(server);
+
+	sigint_handler = signal(SIGINT, handle_sigint);
 
 	return 0;
 }
