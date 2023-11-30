@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-#include <pcie_comm/macro.h>
-
-#include ZEPHYR_INCLUDE(netinet/in.h)
-#include ZEPHYR_INCLUDE(netdb.h)
-#include ZEPHYR_INCLUDE(sys/select.h)
-#include ZEPHYR_INCLUDE(sys/socket.h)
-
-#ifndef __ZEPHYR__
-#include <syslog.h>
-#else
-/* ignore syslog calls */
-#define syslog(...)
-#endif
+#include <netinet/in.h>
+#include <netdb.h>
+#include <sys/select.h>
+#include <sys/socket.h>
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <syslog.h>
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -41,6 +33,13 @@
 #include <pcie_comm/server.h>
 #include <pcie_comm/client.h>
 #include <pcie_comm/config.h>
+
+#ifndef NI_MAXSERV
+#define NI_MAXSERV 32
+#endif
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif
 
 typedef void (*sig_t) (int);
 static sig_t sigint_handler;
@@ -207,10 +206,12 @@ int server_create(struct server_t *server)
 			perror("Failed to set SO_REUSEADDR: ");
 			return -1;
 		}
+#ifdef SO_REUSEPORT
 		if (setsockopt(sfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) != 0) {
 			perror("Failed to set SO_REUSEPORT: ");
 			return -1;
 		}
+#endif
 
 		if ((server->listen ? bind : connect)(sfd, rp->ai_addr, rp->ai_addrlen) != -1) {
 			if (server->listen) {

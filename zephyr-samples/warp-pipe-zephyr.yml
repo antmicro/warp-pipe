@@ -13,4 +13,3 @@ manifest:
           - cmsis
           - mbedtls
           - net-tools
-          - picolibc
