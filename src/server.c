@@ -56,7 +56,6 @@ static void handle_sigint(int signo)
 
 		/* disconnect every user */
 		server_disconnect_clients(pcie_server, NULL);
-		fsync(pcie_server->fd);
 		close(pcie_server->fd);
 	}
 
@@ -89,7 +88,6 @@ void server_disconnect_clients(struct server_t *server, bool (*condition)(struct
 	for (i = TAILQ_FIRST(&server->clients); i != NULL; i = tmp) {
 		tmp = TAILQ_NEXT(i, next);
 		if ((condition == NULL) || condition(i->client)) {
-			fsync(i->client->fd);
 			close(i->client->fd);
 			free(i->client);
 			TAILQ_REMOVE(&server->clients, i, next);
