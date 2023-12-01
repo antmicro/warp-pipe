@@ -59,7 +59,7 @@ bool pcie_crc16_valid(struct pcie_dllp *pkt)
 void pcie_lcrc32(struct pcie_dltlp *pkt)
 {
 	int total_length = tlp_total_length(&pkt->dl_tlp);
-	uint8_t *end = (void *)&pkt->dl_tlp + total_length;
+	uint8_t *end = (uint8_t *)&pkt->dl_tlp + total_length;
 
 	uint32_t crc = ~crc32p(pkt, end, 0xffffffff, TLP_LCRC32_POLY);
 
@@ -72,7 +72,7 @@ void pcie_lcrc32(struct pcie_dltlp *pkt)
 bool pcie_lcrc32_valid(struct pcie_dltlp *pkt)
 {
 	int total_length = tlp_total_length(&pkt->dl_tlp);
-	uint8_t *end = (void *)&pkt->dl_tlp + total_length;
+	uint8_t *end = (uint8_t *)&pkt->dl_tlp + total_length;
 
 	uint32_t crc = ~crc32p(pkt, end, 0xffffffff, TLP_LCRC32_POLY);
 

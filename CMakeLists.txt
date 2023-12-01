@@ -69,6 +69,7 @@ if (NOT DEFINED ZEPHYR_BASE)
 
   set(pcie_comm_cflags
     -Wall
+    -Werror
   )
 
   set(pcie_comm_test_cflags

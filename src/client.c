@@ -304,7 +304,7 @@ int pcie_write(struct client_t *client, uint64_t addr, const void *data, int len
 
 	tlp_req_set_addr(tlp, addr, length);
 
-	void *payload = tlp->tlp_fmt & PCIE_TLP_FMT_4DW ? tlp->tlp_req.r_data64 : tlp->tlp_req.r_data32;
+	uint8_t *payload = tlp->tlp_fmt & PCIE_TLP_FMT_4DW ? tlp->tlp_req.r_data64 : tlp->tlp_req.r_data32;
 
 	memcpy(payload + (addr & 3), data, length);
 

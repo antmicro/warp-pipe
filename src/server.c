@@ -29,6 +29,7 @@
 #include <sys/signal.h>
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include <pcie_comm/server.h>
 #include <pcie_comm/client.h>
