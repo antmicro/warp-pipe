@@ -13,7 +13,7 @@ jobs:
       - run: |
           sudo apt-get update -qq
           sudo apt-get upgrade -y -qq
-          sudo apt-get install -y -qq cmake git lcov
+          sudo apt-get install -y -qq cmake git lcov libgtest-dev
       - run: pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
       - run: tuttest README.md server-build | bash -o pipefail -
       - run: |

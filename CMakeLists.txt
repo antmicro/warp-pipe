@@ -27,11 +27,6 @@ if (NOT DEFINED ZEPHYR_BASE)
 
   include(FetchContent)
   FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.14.0
-  )
-  FetchContent_Declare(
     fff
     GIT_REPOSITORY https://github.com/meekrosoft/fff.git
     # We depend on the CUSTOM_FFF_FUNCTION_TEMPLATE being present in FFF. This is
@@ -39,7 +34,7 @@ if (NOT DEFINED ZEPHYR_BASE)
     # sha of a recent commit instead.
     GIT_TAG 5111c61e1ef7848e3afd3550044a8cf4405f4199
   )
-  FetchContent_MakeAvailable(googletest fff)
+  FetchContent_MakeAvailable(fff)
 
   # find dependencies
   find_program(LCOV lcov REQUIRED)
@@ -48,7 +43,6 @@ if (NOT DEFINED ZEPHYR_BASE)
   # include paths
   include_directories(
     ${CMAKE_SOURCE_DIR}/inc
-    ${fff_SOURCE_DIR}
   )
 
   # shared sources between the server and test suite
@@ -126,16 +120,24 @@ if (NOT DEFINED ZEPHYR_BASE)
     ${pcie_comm_test_src}
   )
 
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(GTEST_MAIN REQUIRED gtest_main)
   target_link_libraries(server-tests
     PRIVATE
       gcov
-      gtest_main
+      ${GTEST_MAIN_LIBRARIES}
+  )
+  target_include_directories(server-tests
+    PRIVATE
+      ${fff_SOURCE_DIR}
+      ${GTEST_MAIN_INCLUDE_DIRS}
   )
 
   target_compile_options(server-tests
     PRIVATE
       ${pcie_comm_cflags}
       ${pcie_comm_test_cflags}
+      ${GTEST_MAIN_CFLAGS_OTHER}
   )
 
   set_target_properties(server-tests PROPERTIES LINK_FLAGS "--coverage -fsanitize=address")
