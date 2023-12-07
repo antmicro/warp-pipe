@@ -261,6 +261,7 @@ static_assert(sizeof(struct pcie_tlp) == 16);
 static_assert(sizeof(struct pcie_transport) == 23);
 
 int tlp_data_length(const struct pcie_tlp *pkt);
+int tlp_data_length_bytes(const struct pcie_tlp *pkt);
 int tlp_total_length(const struct pcie_tlp *pkt);
 void tlp_req_set_addr(struct pcie_tlp *pkt, uint64_t addr, int length);
 uint64_t tlp_req_get_addr(const struct pcie_tlp *pkt);
