@@ -18,7 +18,7 @@ Build PCIe Communication Server:
     - apt update -qq
     - apt-mark hold tzdata # don't update tzdata, as it sometimes fails to update in CI
     - apt upgrade -y -qq
-    - apt install -y -qq cmake python3-dev python3-pip python3-venv git lcov libgtest-dev
+    - apt install -y -qq cmake python3-dev python3-pip python3-venv git lcov libgtest-dev pkg-config
 
   script:
     - python3 -m venv venv
