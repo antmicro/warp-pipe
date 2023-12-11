@@ -43,6 +43,8 @@ struct warppipe_client_t {
 	void *opaque;
 	warppipe_read_cb_t read_cb;
 	warppipe_write_cb_t write_cb;
+	warppipe_read_cb_t cfg0_read_cb;
+	warppipe_write_cb_t cfg0_write_cb;
 	// 0x1F is maximum allowed tag
 	warppipe_completion_cb_t completion_cb[32];
 	uint8_t read_tag : 5;
@@ -61,10 +63,35 @@ void warppipe_client_create(struct warppipe_client_t *client, int client_fd);
 void warppipe_client_read(struct warppipe_client_t *client);
 int warppipe_ack(struct warppipe_client_t *client, enum pcie_dllp_type type, uint16_t seqno);
 
+/* called on Completer to get config0 data */
+void warppipe_register_config0_read_cb(struct warppipe_client_t *client, warppipe_read_cb_t warppipe_read_cb);
+/* called on Completer to write config0 data */
+void warppipe_register_config0_write_cb(struct warppipe_client_t *client, warppipe_write_cb_t warppipe_write_cb);
 /* called on Completer to get data for Completion with data (CplD) response */
 void warppipe_register_read_cb(struct warppipe_client_t *client, warppipe_read_cb_t read_cb);
 /* called on Completer to perform requested data write */
 void warppipe_register_write_cb(struct warppipe_client_t *client, warppipe_write_cb_t write_cb);
+/* called on Requester to send CR0 to Completer
+ * param:
+ *	client: Completer client
+ *	addr (offset):   address from which Completer should read
+ *	length: length of read (in bytes)
+ * returns: error code
+ *	0 - success
+ *	-1 - network error
+ */
+int warppipe_config0_read(struct warppipe_client_t *client, uint64_t addr, int length, warppipe_completion_cb_t completion_cb);
+/* called on Requester to send CW0 to Completer
+ * param:
+ *	client: Completer client
+ *	addr (offset):   address where Completer should write
+ *	data:   pointer contaning data to write
+ *	length: length of data to write (in bytes)
+ * returns: error code
+ *	0 - success
+ *	-1 - network error
+ */
+int warppipe_config0_write(struct warppipe_client_t *client, uint64_t addr, const void *data, int length);
 /* called on Requester to send MRd to Completer
  * Requester needs to register completion callback and match
  * request with completion tag
