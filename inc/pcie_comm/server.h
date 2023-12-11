@@ -25,7 +25,7 @@
 #include <pcie_comm/client.h>
 #include <pcie_comm/config.h>
 
-typedef void (*server_client_accept_cb_t)(struct client_t *client);
+typedef void (*server_client_accept_cb_t)(struct client_t *client, void *opaque);
 
 struct server_t {
 	/* server's socket fd */
@@ -54,6 +54,9 @@ struct server_t {
 
 	/* client linked-list */
 	struct client_q clients;
+
+	/* optional parameter to server_client_accept_cb function */
+	void *opaque;
 
 	/* called after new client is accepted */
 	server_client_accept_cb_t server_client_accept_cb;
