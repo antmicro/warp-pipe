@@ -24,6 +24,65 @@ int tlp_data_length(const struct pcie_tlp *pkt)
 	return ((data_len - 1) & 0x3FF) + 1;  // 0 means 1024
 }
 
+int tlp_data_length_bytes(const struct pcie_tlp *pkt)
+{
+	int data_len_bytes = tlp_data_length(pkt) * 4;
+
+	if (pkt->tlp_req.r_last_be == 0x0) { // less than single DW
+		switch (pkt->tlp_req.r_first_be) {
+		case 0x1:
+		case 0x2:
+		case 0x4:
+		case 0x8:
+			return 1;
+		case 0x3:
+		case 0x6:
+		case 0xc:
+			return 2;
+		case 0x5:
+		case 0x7:
+		case 0xa:
+		case 0xe:
+			return 3;
+		case 0x9:
+		case 0xb:
+		case 0xd:
+		case 0xf:
+			return 4;
+		}
+	} else if ((pkt->tlp_req.r_first_be & 0x1) == 0x1 && (pkt->tlp_req.r_last_be & 0x8) == 0x8) {
+		return data_len_bytes;
+	} else if ((pkt->tlp_req.r_first_be & 0x1) == 0x1 && (pkt->tlp_req.r_last_be & 0xc) == 0x4) {
+		return data_len_bytes - 1;
+	} else if ((pkt->tlp_req.r_first_be & 0x1) == 0x1 && (pkt->tlp_req.r_last_be & 0xe) == 0x2) {
+		return data_len_bytes - 2;
+	} else if ((pkt->tlp_req.r_first_be & 0x1) == 0x1 && (pkt->tlp_req.r_last_be == 0x1)) {
+		return data_len_bytes - 3;
+	} else if ((pkt->tlp_req.r_first_be & 0x3) == 0x2 && (pkt->tlp_req.r_last_be & 0xc) == 0x4) {
+		return data_len_bytes - 2;
+	} else if ((pkt->tlp_req.r_first_be & 0x3) == 0x2 && (pkt->tlp_req.r_last_be & 0xe) == 0x2) {
+		return data_len_bytes - 3;
+	} else if ((pkt->tlp_req.r_first_be & 0x3) == 0x2 && (pkt->tlp_req.r_last_be == 0x1)) {
+		return data_len_bytes - 4;
+	} else if ((pkt->tlp_req.r_first_be & 0x7) == 0x4 && (pkt->tlp_req.r_last_be & 0xc) == 0x4) {
+		return data_len_bytes - 3;
+	} else if ((pkt->tlp_req.r_first_be & 0x7) == 0x4 && (pkt->tlp_req.r_last_be & 0xe) == 0x2) {
+		return data_len_bytes - 4;
+	} else if ((pkt->tlp_req.r_first_be & 0x7) == 0x4 && (pkt->tlp_req.r_last_be == 0x1)) {
+		return data_len_bytes - 5;
+	} else if ((pkt->tlp_req.r_first_be == 0x8) && (pkt->tlp_req.r_last_be == 0xf)) {
+		return data_len_bytes - 3;
+	} else if ((pkt->tlp_req.r_first_be == 0x8) && (pkt->tlp_req.r_last_be & 0xc) == 0x4) {
+		return data_len_bytes - 4;
+	} else if ((pkt->tlp_req.r_first_be == 0x8) && (pkt->tlp_req.r_last_be & 0xe) == 0x2) {
+		return data_len_bytes - 5;
+	} else if ((pkt->tlp_req.r_first_be == 0x8) && (pkt->tlp_req.r_last_be == 0x1)) {
+		return data_len_bytes - 6;
+	}
+	return -1;
+
+}
+
 int tlp_total_length(const struct pcie_tlp *pkt)
 {
 	int hdr_len = 0;
@@ -53,13 +112,33 @@ void tlp_req_set_addr(struct pcie_tlp *pkt, uint64_t addr, int length)
 	uint8_t *p;
 	int n;
 
-	pkt->tlp_req.r_first_be = 0xf >> addr & 3;
+	int align = addr & 0x3;
+	int length_with_align = length + align;
 
-	length += addr & 3;
-	addr &= ~3U;
+	addr &= ~3ULL;
 
-	pkt->tlp_req.r_last_be = length > 4 ? (0xf << (length & 3) ^ 3) : 0;
-	length /= 4;
+	pkt->tlp_req.r_first_be = 0x0;
+	pkt->tlp_req.r_last_be = 0x0;
+
+	for (int i = align; i < length_with_align; i++) {
+		pkt->tlp_req.r_first_be <<= 0x1;
+		pkt->tlp_req.r_first_be |= (0x1 << align);
+	}
+
+	if (length_with_align <= 4) {
+		pkt->tlp_req.r_last_be = 0x0;
+	} else if (length_with_align % 4 == 0) {
+		pkt->tlp_req.r_last_be = 0xf;
+	} else {
+		for (int i = 0; i < length_with_align % 4; i++) {
+			pkt->tlp_req.r_last_be <<= 0x1;
+			pkt->tlp_req.r_last_be |= 0x1;
+		}
+	}
+
+
+	length = (length_with_align + 4 - 1) / 4;
+
 	pkt->tlp_length_hi = length >> 8;
 	pkt->tlp_length_lo = length & 0xff;
 

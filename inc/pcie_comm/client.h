@@ -71,7 +71,7 @@ void pcie_register_write_cb(struct client_t *client, pcie_write_cb_t pcie_write_
  * param:
  *	client: Completer client
  *	addr:   address from which Completer should read
- *	length: length of read (in DW)
+ *	length: length of read (in bytes)
  * returns: error code
  *	0 - success
  *	-1 - network error
@@ -82,7 +82,7 @@ int pcie_read(struct client_t *client, uint64_t addr, int length, pcie_completio
  *	client: Completer client
  *	addr:   address where Completer should write
  *	data:   pointer contaning data to write
- *	length: length of data to write (in DW)
+ *	length: length of data to write (in bytes)
  * returns: error code
  *	0 - success
  *	-1 - network error
