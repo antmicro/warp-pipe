@@ -151,7 +151,7 @@ static int server_accept(struct server_t *server)
 	new_client_node->client = new_client;
 	TAILQ_INSERT_TAIL(&server->clients, new_client_node, next);
 	if (server->server_client_accept_cb)
-		server->server_client_accept_cb(new_client);
+		server->server_client_accept_cb(new_client, server->opaque);
 
 	server_track_max_fd(server, fd);
 
