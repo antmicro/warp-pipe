@@ -24,7 +24,7 @@ Build PCIe Communication Server:
     - python3 -m venv venv
     - source venv/bin/activate
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-    - tuttest README.md server-build | bash -o pipefail -
+    - tuttest README.md server-build | bash -oe pipefail -
     
     - ./build/server-tests
     - ./scripts/coverage.sh
@@ -58,29 +58,29 @@ Build Zephyr Samples:
 
   script:
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-prep | bash -o pipefail -
+    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-prep | bash -oe pipefail -
 
     # PCIe Scan sample
-    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-build | bash -o pipefail -
+    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-build | bash -oe pipefail -
     - tar czf pcie_scan.tar.gz build.pcie_scan
 
     # PCIe NVMe sample
-    - tuttest zephyr-samples/pcie_nvme/README.md pcie-nvme-build | bash -o pipefail -
+    - tuttest zephyr-samples/pcie_nvme/README.md pcie-nvme-build | bash -oe pipefail -
     - tar czf pcie_nvme.tar.gz build.pcie_nvme
 
     # PCIe IVSHMEM sample
-    - tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -o pipefail -
+    - tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -oe pipefail -
     - tar czf pcie_ivshmem.tar.gz build.pcie_ivshmem
 
     # Build PCIe DMA sample
-    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build | bash -o pipefail -
+    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build | bash -oe pipefail -
     - tar czf pcie_dma.tar.gz build.pcie_dma
 
     # Run PCIe DMA sample
-    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-memory-mock,pcie-dma-net-setup,pcie-dma-run,pcie-dma-teardown | bash -o pipefail -
+    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-memory-mock,pcie-dma-net-setup,pcie-dma-run,pcie-dma-teardown | bash -oe pipefail -
 
     # Run warp-pipe sample
-    - tuttest zephyr-samples/pcie_pipe/README.md pcie-pipe-lib-prep,pcie-qemu-build,pcie-pipe-build,pcie-pipe-run,pcie-pipe-teardown | bash -o pipefail -
+    - tuttest zephyr-samples/pcie_pipe/README.md pcie-pipe-lib-prep,pcie-qemu-build,pcie-pipe-build,pcie-pipe-run,pcie-pipe-teardown | bash -oe pipefail -
 
   artifacts:
     paths:
