@@ -41,8 +41,10 @@ struct warppipe_client_t {
 	bool active;
 	char buf[CLIENT_BUFFER_SIZE];
 	void *opaque;
-	warppipe_read_cb_t read_cb;
-	warppipe_write_cb_t write_cb;
+	warppipe_read_cb_t bar_read_cb[6];
+	warppipe_write_cb_t bar_write_cb[6];
+	uint32_t bar[6];
+	uint32_t bar_size[6];
 	warppipe_read_cb_t cfg0_read_cb;
 	warppipe_write_cb_t cfg0_write_cb;
 	// 0x1F is maximum allowed tag
@@ -67,10 +69,8 @@ int warppipe_ack(struct warppipe_client_t *client, enum pcie_dllp_type type, uin
 void warppipe_register_config0_read_cb(struct warppipe_client_t *client, warppipe_read_cb_t warppipe_read_cb);
 /* called on Completer to write config0 data */
 void warppipe_register_config0_write_cb(struct warppipe_client_t *client, warppipe_write_cb_t warppipe_write_cb);
-/* called on Completer to get data for Completion with data (CplD) response */
-void warppipe_register_read_cb(struct warppipe_client_t *client, warppipe_read_cb_t read_cb);
-/* called on Completer to perform requested data write */
-void warppipe_register_write_cb(struct warppipe_client_t *client, warppipe_write_cb_t write_cb);
+/* called on Completer to register new BAR with associated read/write callbacks */
+int warppipe_register_bar(struct warppipe_client_t *client, uint64_t bar, uint32_t bar_size, int bar_idx, warppipe_read_cb_t read_cb, warppipe_write_cb_t write_cb);
 /* called on Requester to send CR0 to Completer
  * param:
  *	client: Completer client
@@ -103,7 +103,7 @@ int warppipe_config0_write(struct warppipe_client_t *client, uint64_t addr, cons
  *	0 - success
  *	-1 - network error
  */
-int warppipe_read(struct warppipe_client_t *client, uint64_t addr, int length, warppipe_completion_cb_t completion_cb);
+int warppipe_read(struct warppipe_client_t *client, int bar_idx, uint64_t addr, int length, warppipe_completion_cb_t completion_cb);
 /* called on Requester to send MWr to Completer
  * param:
  *	client: Completer client
@@ -114,6 +114,6 @@ int warppipe_read(struct warppipe_client_t *client, uint64_t addr, int length, w
  *	0 - success
  *	-1 - network error
  */
-int warppipe_write(struct warppipe_client_t *client, uint64_t addr, const void *data, int length);
+int warppipe_write(struct warppipe_client_t *client, int bar_idx, uint64_t addr, const void *data, int length);
 
 #endif /* WARP_PIPE_CLIENT_H */

@@ -335,7 +335,8 @@ TEST(TestClient, ClientReadTLPCPLFail) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes, 2);
 
 	warppipe_client_create(&client, 10);
-	warppipe_register_read_cb(&client, [](uint64_t addr, void *data, int length, void *opaque) { return 0; });
+	int rc = warppipe_register_bar(&client, 0x0, 1024, 0, [](uint64_t addr, void *data, int length, void *opaque) { return 0; }, NULL);
+	ASSERT_EQ(rc, 0);
 	warppipe_client_read(&client);
 
 	EXPECT_EQ(total_sent, 19);
@@ -538,7 +539,7 @@ TEST(TestClient, ClientPcieRead) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 4);
 
 	warppipe_client_create(&client, 10);
-	warppipe_register_read_cb(&client, [](uint64_t addr, void *data, int length, void *opaque)
+	int rc = warppipe_register_bar(&client, 0x1000, 1024, 0, [](uint64_t addr, void *data, int length, void *opaque)
 	{
 		uint8_t *result = (uint8_t*)data;
 		memset(data, 0, length);
@@ -546,9 +547,11 @@ TEST(TestClient, ClientPcieRead) {
 			result[i] = (uint8_t)i;
 		}
 		return 0;
-	});
+	}, NULL);
 
-	int rc = warppipe_read(&client, 0x0, 40, [](const struct warppipe_completion_status_t completion_status, const void *data, int length)
+	ASSERT_EQ(rc, 0);
+
+	rc = warppipe_read(&client, 0, 0x0, 40, [](const struct warppipe_completion_status_t completion_status, const void *data, int length)
 	{
 		uint8_t *result = (uint8_t *)data;
 		ASSERT_EQ(completion_status.error_code, 0);
@@ -659,7 +662,7 @@ TEST(TestClient, ClientPcieSmallRead) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 4);
 
 	warppipe_client_create(&client, 10);
-	warppipe_register_read_cb(&client, [](uint64_t addr, void *data, int length, void *opaque)
+	int rc_bar = warppipe_register_bar(&client, 0x1000, 1024, 0, [](uint64_t addr, void *data, int length, void *opaque)
 	{
 		uint8_t *result = (uint8_t*)data;
 		memset(data, 0, length);
@@ -667,9 +670,10 @@ TEST(TestClient, ClientPcieSmallRead) {
 			result[i] = (uint8_t)i;
 		}
 		return 0;
-	});
+	}, NULL);
+	ASSERT_EQ(rc_bar, 0);
 
-	int rc = warppipe_read(&client, 0x0, read_size, [](const struct warppipe_completion_status_t completion_status, const void *data, int length)
+	int rc_read = warppipe_read(&client, 0, 0x0, read_size, [](const struct warppipe_completion_status_t completion_status, const void *data, int length)
 	{
 		uint8_t *result = (uint8_t *)data;
 		ASSERT_EQ(completion_status.error_code, 0);
@@ -679,7 +683,7 @@ TEST(TestClient, ClientPcieSmallRead) {
 			ASSERT_EQ(result[i], (uint8_t)i);
 	});
 
-	ASSERT_EQ(rc, 0);
+	ASSERT_EQ(rc_read, 0);
 	ASSERT_EQ(tport_request.t_proto, PCIE_PROTO_TLP);
 	ASSERT_EQ(tport_request.t_tlp.dl_tlp.tlp_fmt, PCIE_TLP_MRD32 >> 5);
 	ASSERT_EQ(tport_request.t_tlp.dl_tlp.tlp_type, PCIE_TLP_MRD32 & 0x1F);
@@ -756,7 +760,7 @@ TEST(TestClient, ClientPcieWrite) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 2);
 
 	warppipe_client_create(&client, 10);
-	warppipe_register_write_cb(&client, [](uint64_t addr, const void *data, int length, void *opaque)
+	int rc_bar = warppipe_register_bar(&client, 0x1000, 1024, 0, NULL, [](uint64_t addr, const void *data, int length, void *opaque)
 	{
 		ASSERT_EQ(length, 40);
 		for (int i = 0; i < length; i++) {
@@ -764,10 +768,11 @@ TEST(TestClient, ClientPcieWrite) {
 		}
 		return;
 	});
+	ASSERT_EQ(rc_bar, 0);
 
-	int rc = warppipe_write(&client, 0x0, write_data, 40);
+	int rc_write = warppipe_write(&client, 0, 0x0, write_data, 40);
 
-	ASSERT_EQ(rc, 0);
+	ASSERT_EQ(rc_write, 0);
 	ASSERT_EQ(tport_request->t_proto, PCIE_PROTO_TLP);
 	ASSERT_EQ(tport_request->t_tlp.dl_tlp.tlp_fmt, PCIE_TLP_MWR32 >> 5);
 	ASSERT_EQ(tport_request->t_tlp.dl_tlp.tlp_type, PCIE_TLP_MWR32 & 0x1F);

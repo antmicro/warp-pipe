@@ -295,7 +295,7 @@ static void dma_emul_work_handler(struct k_work *work)
 				__ASSERT_NO_MSG(state == DMA_EMUL_CHANNEL_STARTED);
 
 				// TODO: check source address and use warppipe_write if host, or warppipe_read if remote
-				warppipe_read(TAILQ_FIRST(&pcie_server.clients)->client, (uintptr_t)block.source_address, bytes * 4, pcie_completion_cb);
+				warppipe_read(TAILQ_FIRST(&pcie_server.clients)->client, 0, (uintptr_t)block.source_address, bytes * 4, pcie_completion_cb);
 				while(!got_result) {
 					warppipe_server_loop(&pcie_server);
 				}
@@ -463,6 +463,8 @@ static int dma_emul_start(const struct device *dev, uint32_t channel)
 		printk("Failed to create server!");
 		return -1;
 	}
+	/* register remote bar */
+	warppipe_register_bar(TAILQ_FIRST(&pcie_server.clients)->client, 0x1000, 4 * 1024, 0, NULL, NULL);
 
 	key = k_spin_lock(&data->lock);
 	xfer = &config->xfer[channel];
