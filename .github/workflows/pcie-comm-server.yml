@@ -47,6 +47,7 @@ jobs:
       options: --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun
     env:
       CMAKE_PREFIX_PATH: /opt/toolchains
+      PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
     steps:
       - uses: actions/checkout@v3
       - run: |
@@ -65,6 +66,8 @@ jobs:
           tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build | bash -o pipefail -
           tar czf pcie_dma.tar.gz build.pcie_dma
           tuttest zephyr-samples/pcie_dma/README.md pcie-dma-memory-mock,pcie-dma-net-setup,pcie-dma-run,pcie-dma-teardown | bash -o pipefail -
+      - run: |
+          tuttest zephyr-samples/pcie_pipe/README.md pcie-pipe-lib-prep,pcie-qemu-build,pcie-pipe-build,pcie-pipe-run,pcie-pipe-teardown | bash -o pipefail -
 
       - uses: actions/upload-artifact@v3
         with:
