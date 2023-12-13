@@ -9,23 +9,23 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/../inc
 )
 
-set(pcie_comm_src
+set(warp_pipe_src
   ${CMAKE_SOURCE_DIR}/../src/server.c
   ${CMAKE_SOURCE_DIR}/../src/client.c
   ${CMAKE_SOURCE_DIR}/../src/crc.c
   ${CMAKE_SOURCE_DIR}/../src/proto.c
 )
 
-set(pcie_comm_cflags
+set(warp_pipe_cflags
   -Wall
 )
 
 add_executable(memory_mock
   ${CMAKE_SOURCE_DIR}/main.c
-  ${pcie_comm_src}
+  ${warp_pipe_src}
 )
 
 target_compile_options(memory_mock
   PRIVATE
-    ${pcie_comm_cflags}
+    ${warp_pipe_cflags}
 )

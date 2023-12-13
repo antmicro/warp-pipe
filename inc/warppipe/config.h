@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef PCIE_COMM_CONFIG_H
-#define PCIE_COMM_CONFIG_H
+#ifndef WARP_PIPE_CONFIG_H
+#define WARP_PIPE_CONFIG_H
 
-#define PRJ_NAME_LONG			"PCIe Communication Server"
-#define PRJ_NAME_SHORT			"pcied"
+#define PRJ_NAME_LONG			"Warp Pipe"
+#define PRJ_NAME_SHORT			"warp-pipe"
 
 #define SERVER_PORT_NUM			"2115"
 #define SERVER_LISTEN_QUEUE_SIZE	64
@@ -28,4 +28,4 @@
 #define CLIENT_MAX_PACKET_HEADER_SIZE	21 /* 1 PROTO + 16 TLP + 4 LCRC32 */
 #define CLIENT_BUFFER_SIZE		(CLIENT_MAX_PACKET_DATA_SIZE + CLIENT_MAX_PACKET_HEADER_SIZE)
 
-#endif /* PCIE_COMM_CONFIG_H */
+#endif /* WARP_PIPE_CONFIG_H */

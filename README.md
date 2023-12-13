@@ -1,10 +1,10 @@
-PCIe Communication Server
-=========================
+Warp Pipe
+=========
 
 Copyright (c) 2023 [Antmicro](https://www.antmicro.com)  
 Copyright (c) 2023 Meta
 
-A TCP server for the PCIe Communication Library, which aims to facilitate
+A TCP server for the Warp Pipe Library, which aims to facilitate
 creating PCIe links in a distributed simulation environment. This includes:
 * packetizing/depacketizing PCIe transactions into TLPs and DLLPs 
 * transmitting PCIe transactions over sockets using a custom PCIe/IP TCP-based
@@ -16,7 +16,7 @@ creating PCIe links in a distributed simulation environment. This includes:
 Building
 --------
 
-To build the PCIe Communication Server, use the following snippet:
+To build the Warp Pipe, use the following snippet:
 
 <!-- name="server-build" -->
 ```
@@ -36,5 +36,5 @@ Syslog
 To view logs, use:
 
 ```
-journalctl -t pcied -f
+journalctl -t warp-pipe -f
 ```

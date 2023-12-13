@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include <pcie_comm/proto.h>
+#include <warppipe/proto.h>
 
 int tlp_data_length(const struct pcie_tlp *pkt)
 {

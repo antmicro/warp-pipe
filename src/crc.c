@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include <pcie_comm/crc.h>
-#include <pcie_comm/proto.h>
+#include <warppipe/crc.h>
+#include <warppipe/proto.h>
 
 uint32_t crc32p(const void *start, const void *end, uint32_t init, uint32_t poly)
 {

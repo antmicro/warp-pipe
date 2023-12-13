@@ -32,7 +32,7 @@ This sample requires  also custom QEMU with warp-pipe integration. Use following
 ```
 mkdir qemu/build
 pushd qemu/build
-../configure --enable-pcied --target-list=x86_64-softmmu
+../configure --enable-warp-pipe --target-list=x86_64-softmmu
 make -j$(nproc)
 export QEMU_BIN_PATH=`pwd`
 popd

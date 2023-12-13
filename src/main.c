@@ -23,11 +23,11 @@
 #include <netinet/in.h>
 #include <getopt.h>
 
-#include <pcie_comm/server.h>
-#include <pcie_comm/client.h>
-#include <pcie_comm/config.h>
+#include <warppipe/server.h>
+#include <warppipe/client.h>
+#include <warppipe/config.h>
 
-static struct server_t server = {
+static struct warppipe_server_t server = {
 	.listen = true,
 	.addr_family = AF_UNSPEC,
 	.host = NULL,
@@ -76,10 +76,10 @@ int main(int argc, char *argv[])
 	/* server initialization */
 	syslog(LOG_NOTICE, "Starting " PRJ_NAME_LONG "...");
 
-	ret = server_create(&server);
+	ret = warppipe_server_create(&server);
 	if (!ret)
 		while (!server.quit)
-			server_loop(&server);
+			warppipe_server_loop(&server);
 	else
 		syslog(LOG_NOTICE, "Failed to set up server for " PRJ_NAME_LONG ".");
 

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef PCIE_COMM_PROTO_H
-#define PCIE_COMM_PROTO_H
+#ifndef WARP_PIPE_PROTO_H
+#define WARP_PIPE_PROTO_H
 
 #include <endian.h>
 #include <assert.h>
@@ -242,7 +242,7 @@ struct pcie_dltlp {
 	};
 };
 
-struct pcie_transport {
+struct warppipe_pcie_transport {
 	/*
 	 * In C23 it could be `enum pcie_proto : uint8_t`
 	 * and then `enum pcie_proto t_proto:8`.
@@ -258,7 +258,7 @@ struct pcie_transport {
 
 static_assert(sizeof(struct pcie_dllp) == 6);
 static_assert(sizeof(struct pcie_tlp) == 16);
-static_assert(sizeof(struct pcie_transport) == 23);
+static_assert(sizeof(struct warppipe_pcie_transport) == 23);
 
 int tlp_data_length(const struct pcie_tlp *pkt);
 int tlp_data_length_bytes(const struct pcie_tlp *pkt);
@@ -266,4 +266,4 @@ int tlp_total_length(const struct pcie_tlp *pkt);
 void tlp_req_set_addr(struct pcie_tlp *pkt, uint64_t addr, int length);
 uint64_t tlp_req_get_addr(const struct pcie_tlp *pkt);
 
-#endif /* PCIE_COMM_PROTO_H */
+#endif /* WARP_PIPE_PROTO_H */

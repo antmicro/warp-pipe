@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef PCIE_COMM_CRC_H
-#define PCIE_COMM_CRC_H
+#ifndef WARP_PIPE_CRC_H
+#define WARP_PIPE_CRC_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -37,4 +37,4 @@ bool pcie_lcrc32_valid(struct pcie_dltlp *pkt);
 uint32_t crc32p(const void *start, const void *end, uint32_t init,
 		uint32_t poly);
 
-#endif /* PCIE_COMM_CRC_H */
+#endif /* WARP_PIPE_CRC_H */
