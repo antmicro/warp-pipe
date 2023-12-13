@@ -20,26 +20,78 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/dma.h>
+#include <zephyr/drivers/pcie/msi.h>
 
 #define DATA_SIZE 32
 
+void irq_handle(const void *unused)
+{
+	printf("Received MSI-X IRQ!\n");
+}
+
 int main(void)
 {
+#ifndef WARP_PIPE_LISTEN
 	mm_reg_t mm;
-	uint8_t result[DATA_SIZE];
 
 	device_map(&mm, 0xfea00000, 0x100, K_MEM_CACHE_NONE);
+	printf("Initial memory values: ");
 	for (int i = 0; i < DATA_SIZE; i++) {
-		uint32_t read = sys_read32(mm);
+		if (i % 8 == 0)
+			printf("\n");
 
-		result[i] = (uint8_t)read;
+		uint32_t read = sys_read32(mm + i * 4);
+
+		printf("0x%x ", read);
 	}
-
-	printf("Data transfer finished: ");
-	for (int i = 0; i < DATA_SIZE; ++i)
-		printf("0x%x ", result[i]);
 	printf("\n");
 
+	printf("Updated memory values: ");
+	for (int i = 0; i < DATA_SIZE; i++) {
+		if (i % 8 == 0)
+			printf("\n");
 
+		sys_write32(0xABABABAB, mm + i * 4);
+
+		uint32_t read = sys_read32(mm + i * 4);
+
+		printf("0x%x ", read);
+	}
+	printf("\n");
+
+	uint8_t n_vectors;
+	msi_vector_t vectors[1];
+	pcie_bdf_t bdf = PCIE_BDF(0, 2, 0);
+
+	n_vectors = pcie_msi_vectors_allocate(bdf,
+					      1,
+					      vectors,
+					      1);
+	if (n_vectors == 0) {
+		printf("Could not allocate %u MSI-X vectors\n",
+			1);
+		return -1;
+	}
+
+	printf("Allocated %u vectors\n", n_vectors);
+
+	for (int i = 0; i < n_vectors; i++) {
+
+		if (!pcie_msi_vector_connect(bdf,
+					     &vectors[i],
+					     irq_handle,
+					     NULL, 0)) {
+			printf("Failed to connect MSI-X vector %u\n", i);
+			return -1;
+		}
+	}
+
+	printf("%u MSI-X Vectors connected\n", n_vectors);
+
+	if (!pcie_msi_enable(bdf, vectors, n_vectors, 0)) {
+		printf("Could not enable MSI-X\n");
+		return -1;
+	}
+#endif
 	return 0;
 }
