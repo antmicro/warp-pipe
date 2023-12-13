@@ -19,8 +19,8 @@
 #include "common.h"
 
 extern "C" {
-#include <pcie_comm/server.h>
-#include <pcie_comm/config.h>
+#include <warppipe/server.h>
+#include <warppipe/config.h>
 
 FAKE_VALUE_FUNC(int, bind, int, void *, int);
 FAKE_VALUE_FUNC(int, socket, int, int, int);
@@ -33,7 +33,7 @@ FAKE_VALUE_FUNC(int, setsockopt, int, int, int,const void *, socklen_t);
 }
 
 TEST(TestServer, CreatesServer) {
-	struct server_t server = {};
+	struct warppipe_server_t server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -45,14 +45,14 @@ TEST(TestServer, CreatesServer) {
 	socket_fake.return_val = 10;
 	setsockopt_fake.return_val = 0;
 
-	server_create(&server);
+	warppipe_server_create(&server);
 
 	EXPECT_EQ(server.fd, 10);
 	EXPECT_EQ(server.max_fd, 10);
 }
 
 TEST(TestServer, CreatesServerFailSocket) {
-	struct server_t server = {};
+	struct warppipe_server_t server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -60,11 +60,11 @@ TEST(TestServer, CreatesServerFailSocket) {
 
 	socket_fake.return_val = -1;
 
-	EXPECT_EQ(server_create(&server), -1);
+	EXPECT_EQ(warppipe_server_create(&server), -1);
 }
 
 TEST(TestServer, CreatesServerFailBind) {
-	struct server_t server = {};
+	struct warppipe_server_t server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -74,11 +74,11 @@ TEST(TestServer, CreatesServerFailBind) {
 	socket_fake.return_val = 10;
 	bind_fake.return_val = -1;
 
-	EXPECT_EQ(server_create(&server), -1);
+	EXPECT_EQ(warppipe_server_create(&server), -1);
 }
 
 TEST(TestServer, ServerLoopEmpty) {
-	struct server_t server = {};
+	struct warppipe_server_t server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -88,7 +88,7 @@ TEST(TestServer, ServerLoopEmpty) {
 	bind_fake.return_val = 0;
 	socket_fake.return_val = 10;
 
-	server_create(&server);
-	server_loop(&server);
-	server_disconnect_clients(&server, NULL);
+	warppipe_server_create(&server);
+	warppipe_server_loop(&server);
+	warppipe_server_disconnect_clients(&server, NULL);
 }

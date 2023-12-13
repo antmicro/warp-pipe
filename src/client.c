@@ -23,13 +23,13 @@
 #include <string.h>
 #include <errno.h>
 
-#include <pcie_comm/client.h>
-#include <pcie_comm/config.h>
-#include <pcie_comm/proto.h>
-#include <pcie_comm/crc.h>
-#include <pcie_comm/config.h>
+#include <warppipe/client.h>
+#include <warppipe/config.h>
+#include <warppipe/proto.h>
+#include <warppipe/crc.h>
+#include <warppipe/config.h>
 
-void handle_dllp(struct client_t *client, const struct pcie_dllp *pkt)
+void handle_dllp(struct warppipe_client_t *client, const struct pcie_dllp *pkt)
 {
 	if (pkt->dl_type == PCIE_DLLP_ACK || pkt->dl_type == PCIE_DLLP_NAK) {
 		uint16_t seqno = pkt->dl_acknak.dl_seqno_hi << 8 | pkt->dl_acknak.dl_seqno_lo;
@@ -43,7 +43,7 @@ void handle_dllp(struct client_t *client, const struct pcie_dllp *pkt)
 	}
 }
 
-int client_send_pcie_transport(struct client_t *client, struct pcie_transport *tport)
+int client_send_pcie_transport(struct warppipe_client_t *client, struct warppipe_pcie_transport *tport)
 {
 	int packet_length = 1 + sizeof(tport->t_dllp);
 
@@ -69,10 +69,10 @@ int client_send_pcie_transport(struct client_t *client, struct pcie_transport *t
 	return n;
 }
 
-void handle_memory_read_request(struct client_t *client, const struct pcie_tlp *pkt)
+void handle_memory_read_request(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
 {
 	syslog(LOG_DEBUG, "Got read request TLP");
-	if (!client->pcie_read_cb) {
+	if (!client->read_cb) {
 		syslog(LOG_ERR, "Completer is missing pcie_read callback. Please register pcie_read function using `pcie_register_read_cb` before requesting memory read.");
 		return;
 	}
@@ -80,7 +80,7 @@ void handle_memory_read_request(struct client_t *client, const struct pcie_tlp *
 	int data_len_bytes = tlp_data_length_bytes(pkt);
 	uint64_t addr = tlp_req_get_addr(pkt);
 
-	struct pcie_transport *tport = calloc(1, sizeof(struct pcie_transport) + data_len * 4);
+	struct warppipe_pcie_transport *tport = calloc(1, sizeof(struct warppipe_pcie_transport) + data_len * 4);
 	struct pcie_tlp *tlp = &tport->t_tlp.dl_tlp;
 
 	tport->t_proto = PCIE_PROTO_TLP;
@@ -92,7 +92,7 @@ void handle_memory_read_request(struct client_t *client, const struct pcie_tlp *
 	tlp->tlp_cpl.c_byte_count_hi = data_len_bytes >> 8;
 	tlp->tlp_cpl.c_byte_count_lo = data_len_bytes & 0xFF;
 
-	int read_error = client->pcie_read_cb(addr, tlp->tlp_cpl.c_data, data_len_bytes, client->opaque);
+	int read_error = client->read_cb(addr, tlp->tlp_cpl.c_data, data_len_bytes, client->opaque);
 
 	if (read_error)
 		tlp->tlp_fmt &= ~PCIE_TLP_FMT_DATA;  // send Cpl instead of CplD to indicate failure
@@ -103,10 +103,10 @@ void handle_memory_read_request(struct client_t *client, const struct pcie_tlp *
 	free(tport);
 }
 
-void handle_memory_write_request(struct client_t *client, const struct pcie_tlp *pkt)
+void handle_memory_write_request(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
 {
 	syslog(LOG_DEBUG, "Got write request TLP");
-	if (!client->pcie_write_cb) {
+	if (!client->write_cb) {
 		syslog(LOG_ERR, "Completer is missing pcie_write callback. Please register pcie_write function using `pcie_register_write_cb` before requesting memory write.");
 		return;
 	}
@@ -115,28 +115,28 @@ void handle_memory_write_request(struct client_t *client, const struct pcie_tlp 
 
 	const void *data = pkt->tlp_fmt & PCIE_TLP_FMT_4DW ? pkt->tlp_req.r_data64 : pkt->tlp_req.r_data32;
 
-	client->pcie_write_cb(addr, data, data_len, client->opaque);
+	client->write_cb(addr, data, data_len, client->opaque);
 }
 
-void handle_completion(struct client_t *client, const struct pcie_tlp *pkt)
+void handle_completion(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
 {
-	struct completion_status_t completion_status;
+	struct warppipe_completion_status_t completion_status;
 
 	completion_status.error_code = 0;
 
 	syslog(LOG_DEBUG, "Got completion TLP");
-	if (client->pcie_completion_cb[pkt->tlp_cpl.c_tag] == NULL) {
+	if (client->completion_cb[pkt->tlp_cpl.c_tag] == NULL) {
 		syslog(LOG_ERR, "Couldn't find read request for completion with tag: %d", pkt->tlp_req.r_tag);
 		return;
 	}
 
 	int data_len = pkt->tlp_cpl.c_byte_count_hi << 8 | pkt->tlp_cpl.c_byte_count_lo;
 
-	client->pcie_completion_cb[pkt->tlp_cpl.c_tag](completion_status, pkt->tlp_cpl.c_data, data_len);
-	client->pcie_completion_cb[pkt->tlp_cpl.c_tag] = NULL;
+	client->completion_cb[pkt->tlp_cpl.c_tag](completion_status, pkt->tlp_cpl.c_data, data_len);
+	client->completion_cb[pkt->tlp_cpl.c_tag] = NULL;
 }
 
-void handle_tlp(struct client_t *client, const struct pcie_tlp *pkt)
+void handle_tlp(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
 {
 	switch ((enum pcie_tlp_type)(pkt->tlp_fmt << 5 | pkt->tlp_type)) {
 	case PCIE_TLP_IORD:
@@ -162,9 +162,9 @@ void handle_tlp(struct client_t *client, const struct pcie_tlp *pkt)
 	}
 }
 
-int client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqno)
+int warppipe_ack(struct warppipe_client_t *client, enum pcie_dllp_type type, uint16_t seqno)
 {
-	struct pcie_transport tport = {
+	struct warppipe_pcie_transport tport = {
 		.t_proto = PCIE_PROTO_DLLP,
 		.t_dllp = {
 			.dl_acknak = {
@@ -181,9 +181,9 @@ int client_ack(struct client_t *client, enum pcie_dllp_type type, uint16_t seqno
 	return 0;
 }
 
-void client_read(struct client_t *client)
+void warppipe_client_read(struct warppipe_client_t *client)
 {
-	struct pcie_transport *tport = (void *)client->buf;
+	struct warppipe_pcie_transport *tport = (void *)client->buf;
 	int len = 0;
 
 	len = recv(client->fd, tport, 1 + sizeof(tport->t_dllp), 0);
@@ -229,7 +229,7 @@ void client_read(struct client_t *client)
 			}
 			bool crc_ok = pcie_lcrc32_valid(&tport->t_tlp);
 
-			client_ack(client, crc_ok ? PCIE_DLLP_ACK : PCIE_DLLP_NAK, tport->t_tlp.dl_seqno_hi << 8 | tport->t_tlp.dl_seqno_lo);
+			warppipe_ack(client, crc_ok ? PCIE_DLLP_ACK : PCIE_DLLP_NAK, tport->t_tlp.dl_seqno_hi << 8 | tport->t_tlp.dl_seqno_lo);
 			if (crc_ok)
 				handle_tlp(client, &tport->t_tlp.dl_tlp);
 			else
@@ -243,32 +243,32 @@ void client_read(struct client_t *client)
 	}
 }
 
-void client_create(struct client_t *client, int client_fd)
+void warppipe_client_create(struct warppipe_client_t *client, int client_fd)
 {
 	client->fd = client_fd;
 	client->seqno = 0;
 	client->active = true;
-	client->pcie_read_cb = NULL;
-	client->pcie_write_cb = NULL;
-	client->pcie_read_tag = 0;
+	client->read_cb = NULL;
+	client->write_cb = NULL;
+	client->read_tag = 0;
 
-	memset(client->pcie_completion_cb, 0, sizeof(pcie_completion_cb_t) * 32);
+	memset(client->completion_cb, 0, sizeof(warppipe_completion_cb_t) * 32);
 }
 
-void pcie_register_read_cb(struct client_t *client, pcie_read_cb_t pcie_read_cb)
+void warppipe_register_read_cb(struct warppipe_client_t *client, warppipe_read_cb_t read_cb)
 {
-	client->pcie_read_cb = pcie_read_cb;
+	client->read_cb = read_cb;
 }
 
-void pcie_register_write_cb(struct client_t *client, pcie_write_cb_t pcie_write_cb)
+void warppipe_register_write_cb(struct warppipe_client_t *client, warppipe_write_cb_t write_cb)
 {
-	client->pcie_write_cb = pcie_write_cb;
+	client->write_cb = write_cb;
 }
 
-int pcie_read(struct client_t *client, uint64_t addr, int length, pcie_completion_cb_t pcie_completion_cb)
+int warppipe_read(struct warppipe_client_t *client, uint64_t addr, int length, warppipe_completion_cb_t completion_cb)
 {
-	int tag = client->pcie_read_tag++;
-	struct pcie_transport tport = {
+	int tag = client->read_tag++;
+	struct warppipe_pcie_transport tport = {
 		.t_proto = PCIE_PROTO_TLP,
 		.t_tlp = {
 			.dl_tlp = {
@@ -286,18 +286,18 @@ int pcie_read(struct client_t *client, uint64_t addr, int length, pcie_completio
 	if (client_send_pcie_transport(client, &tport) == -1)
 		return -1;
 
-	if (client->pcie_completion_cb[tag] != NULL)
+	if (client->completion_cb[tag] != NULL)
 		syslog(LOG_ERR, "Tried to send read request with already used tag!");
 
-	client->pcie_completion_cb[tag] = pcie_completion_cb;
+	client->completion_cb[tag] = completion_cb;
 
 	return 0;
 }
 
-int pcie_write(struct client_t *client, uint64_t addr, const void *data, int length)
+int warppipe_write(struct warppipe_client_t *client, uint64_t addr, const void *data, int length)
 {
 	int rc = 0;
-	struct pcie_transport *tport = malloc(sizeof(struct pcie_transport) + ((length + (addr & 3) + 3) & ~3));
+	struct warppipe_pcie_transport *tport = malloc(sizeof(struct warppipe_pcie_transport) + ((length + (addr & 3) + 3) & ~3));
 
 	struct pcie_tlp *tlp = &tport->t_tlp.dl_tlp;
 

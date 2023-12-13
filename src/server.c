@@ -31,9 +31,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <pcie_comm/server.h>
-#include <pcie_comm/client.h>
-#include <pcie_comm/config.h>
+#include <warppipe/server.h>
+#include <warppipe/client.h>
+#include <warppipe/config.h>
 
 #ifndef NI_MAXSERV
 #define NI_MAXSERV 32
@@ -44,7 +44,7 @@
 
 typedef void (*sig_t) (int);
 static sig_t sigint_handler;
-static struct server_t *pcie_server;
+static struct warppipe_server_t *pcie_server;
 
 static void handle_sigint(int signo)
 {
@@ -56,7 +56,7 @@ static void handle_sigint(int signo)
 		pcie_server->quit = true;
 
 		/* disconnect every user */
-		server_disconnect_clients(pcie_server, NULL);
+		warppipe_server_disconnect_clients(pcie_server, NULL);
 		close(pcie_server->fd);
 	}
 
@@ -70,21 +70,21 @@ static void handle_sigint(int signo)
 		sigint_handler(signo);
 }
 
-static inline void server_track_max_fd(struct server_t *server, int new_fd)
+static inline void track_max_fd(struct warppipe_server_t *server, int new_fd)
 {
 	if (server->max_fd < new_fd)
 		server->max_fd = new_fd;
 }
 
-static bool server_should_disconnect_client(struct client_t *client)
+static bool should_disconnect_client(struct warppipe_client_t *client)
 {
 	return !client->active;
 }
 
-void server_disconnect_clients(struct server_t *server, bool (*condition)(struct
-			client_t *client))
+void warppipe_server_disconnect_clients(struct warppipe_server_t *server, bool (*condition)(struct
+			warppipe_client_t *client))
 {
-	struct client_node_t *i, *tmp;
+	struct warppipe_client_node_t *i, *tmp;
 
 	for (i = TAILQ_FIRST(&server->clients); i != NULL; i = tmp) {
 		tmp = TAILQ_NEXT(i, next);
@@ -100,22 +100,22 @@ void server_disconnect_clients(struct server_t *server, bool (*condition)(struct
 	}
 }
 
-static void server_read(struct server_t *server)
+static void server_read(struct warppipe_server_t *server)
 {
-	struct client_node_t *i;
+	struct warppipe_client_node_t *i;
 
 	TAILQ_FOREACH(i, &server->clients, next)
 		if (FD_ISSET(i->client->fd, &server->read_fds))
-			client_read(i->client);
+			warppipe_client_read(i->client);
 }
 
-static int server_accept(struct server_t *server)
+static int server_accept(struct warppipe_server_t *server)
 {
 	int fd, ret;
 	struct sockaddr_storage sock_addr;
 	socklen_t sock_addr_len = sizeof(sock_addr);
-	struct client_t *new_client;
-	struct client_node_t *new_client_node;
+	struct warppipe_client_t *new_client;
+	struct warppipe_client_node_t *new_client_node;
 	char host[NI_MAXHOST];
 	char port[NI_MAXSERV];
 
@@ -139,21 +139,21 @@ static int server_accept(struct server_t *server)
 		fd = server->fd;
 	}
 
-	new_client = malloc(sizeof(struct client_t));
+	new_client = malloc(sizeof(struct warppipe_client_t));
 	if (!new_client)
 		goto fail;
 
-	new_client_node = malloc(sizeof(struct client_node_t));
+	new_client_node = malloc(sizeof(struct warppipe_client_node_t));
 	if (!new_client_node)
 		goto fail_free_client;
 
-	client_create(new_client, fd);
+	warppipe_client_create(new_client, fd);
 	new_client_node->client = new_client;
 	TAILQ_INSERT_TAIL(&server->clients, new_client_node, next);
-	if (server->server_client_accept_cb)
-		server->server_client_accept_cb(new_client, server->opaque);
+	if (server->accept_cb)
+		server->accept_cb(new_client, server->opaque);
 
-	server_track_max_fd(server, fd);
+	track_max_fd(server, fd);
 
 	return 0;
 
@@ -163,12 +163,12 @@ fail:
 	return -1;
 }
 
-void server_register_accept_cb(struct server_t *server, server_client_accept_cb_t server_client_accept_cb)
+void warppipe_server_register_accept_cb(struct warppipe_server_t *server, warppipe_server_accept_cb_t accept_cb)
 {
-	server->server_client_accept_cb = server_client_accept_cb;
+	server->accept_cb = accept_cb;
 }
 
-int server_create(struct server_t *server)
+int warppipe_server_create(struct warppipe_server_t *server)
 {
 	int fd_flags, ret;
 	char host[NI_MAXHOST];
@@ -269,9 +269,9 @@ int server_create(struct server_t *server)
 	return 0;
 }
 
-void server_loop(struct server_t *server)
+void warppipe_server_loop(struct warppipe_server_t *server)
 {
-	struct client_node_t *i;
+	struct warppipe_client_node_t *i;
 
 	/* set up descriptors sets */
 	FD_ZERO(&server->read_fds);
@@ -294,5 +294,5 @@ void server_loop(struct server_t *server)
 	server_read(server);
 
 	/* remove inactive clients */
-	server_disconnect_clients(server, server_should_disconnect_client);
+	warppipe_server_disconnect_clients(server, should_disconnect_client);
 }

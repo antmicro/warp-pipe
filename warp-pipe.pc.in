@@ -3,10 +3,10 @@ exec_prefix=${prefix}
 libdir=@libdir@
 includedir=@includedir@
 
-Name: pcied
+Name: warp-pipe
 Version: @PACKAGE_VERSION@
 Description: PCIe packet transport server library
 URL: https://github.com/antmicro/warp-pipe
 
-Libs: -L${libdir} -lpcied @LIBS@
+Libs: -L${libdir} -lwarppipe @LIBS@
 Cflags: -I${includedir}

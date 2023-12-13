@@ -24,11 +24,11 @@
 #include <getopt.h>
 #include <string.h>
 
-#include <pcie_comm/server.h>
-#include <pcie_comm/client.h>
-#include <pcie_comm/config.h>
+#include <warppipe/server.h>
+#include <warppipe/client.h>
+#include <warppipe/config.h>
 
-static struct server_t server = {
+static struct warppipe_server_t server = {
 	.listen = true,
 	.addr_family = AF_UNSPEC,
 	.host = NULL,
@@ -42,7 +42,7 @@ static void handle_sigint(int signo)
 	syslog(LOG_NOTICE, "Received SIGINT. " PRJ_NAME_LONG " will shut down.");
 
 	/* disconnect every user */
-	server_disconnect_clients(&server, NULL);
+	warppipe_server_disconnect_clients(&server, NULL);
 }
 
 int8_t memory[] = {
@@ -74,16 +74,16 @@ int8_t memory[] = {
 
 static int move;
 
-int pcie_read_cb_imp(uint64_t addr, void *data, int length, void *opaque)
+int read_cb_imp(uint64_t addr, void *data, int length, void *opaque)
 {
 	memcpy(data, memory + move, length);
 	move++;
 	return 0;
 }
 
-void server_client_accept(struct client_t *client)
+void server_client_accept(struct warppipe_client_t *client, void *opaque)
 {
-	pcie_register_read_cb(client, pcie_read_cb_imp);
+	warppipe_register_read_cb(client, read_cb_imp);
 }
 
 int main(int argc, char *argv[])
@@ -130,11 +130,11 @@ int main(int argc, char *argv[])
 	/* server initialization */
 	syslog(LOG_NOTICE, "Starting " PRJ_NAME_LONG "...");
 
-	ret = server_create(&server);
-	server_register_accept_cb(&server, server_client_accept);
+	ret = warppipe_server_create(&server);
+	warppipe_server_register_accept_cb(&server, server_client_accept);
 	if (!ret)
 		while (!server.quit)
-			server_loop(&server);
+			warppipe_server_loop(&server);
 	else
 		syslog(LOG_NOTICE, "Failed to set up server for " PRJ_NAME_LONG ".");
 

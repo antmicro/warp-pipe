@@ -16,9 +16,9 @@
 #include <zephyr/pm/device.h>
 #include <zephyr/sys/util.h>
 
-#include <pcie_comm/client.h>
-#include <pcie_comm/server.h>
-#include <pcie_comm/config.h>
+#include <warppipe/client.h>
+#include <warppipe/server.h>
+#include <warppipe/config.h>
 
 #include <sys/socket.h>
 
@@ -73,7 +73,7 @@ struct dma_emul_data {
 	struct dma_emul_work work;
 };
 
-static struct server_t pcie_server = {
+static struct warppipe_server_t pcie_server = {
 	.listen = false,
 	.addr_family = AF_UNSPEC,
 	.host = CONFIG_PCIE_PIPE_SERVER,
@@ -211,7 +211,7 @@ static const char *dma_emul_block_config_to_string(const struct dma_block_config
 static uint8_t result;
 static bool got_result = false;
 
-static void pcie_completion_cb(const struct completion_status_t completion_status, const void *data, int length)
+static void pcie_completion_cb(const struct warppipe_completion_status_t completion_status, const void *data, int length)
 {
 	uint8_t *response = (uint8_t *)data;
 
@@ -294,10 +294,10 @@ static void dma_emul_work_handler(struct k_work *work)
 
 				__ASSERT_NO_MSG(state == DMA_EMUL_CHANNEL_STARTED);
 
-				// TODO: check source address and use pcie_write if host, or pcie_read if remote
-				pcie_read(TAILQ_FIRST(&pcie_server.clients)->client, (uintptr_t)block.source_address, bytes * 4, pcie_completion_cb);
+				// TODO: check source address and use warppipe_write if host, or warppipe_read if remote
+				warppipe_read(TAILQ_FIRST(&pcie_server.clients)->client, (uintptr_t)block.source_address, bytes * 4, pcie_completion_cb);
 				while(!got_result) {
-					server_loop(&pcie_server);
+					warppipe_server_loop(&pcie_server);
 				}
 				// copy from result buffer to destination
 				memcpy((void *)(uintptr_t)block.dest_address,
@@ -459,7 +459,7 @@ static int dma_emul_start(const struct device *dev, uint32_t channel)
 	if (channel >= config->num_channels) {
 		return -EINVAL;
 	}
-	if (server_create(&pcie_server) == -1) {
+	if (warppipe_server_create(&pcie_server) == -1) {
 		printk("Failed to create server!");
 		return -1;
 	}

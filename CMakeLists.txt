@@ -15,7 +15,7 @@
 
 if (NOT DEFINED ZEPHYR_BASE)
   cmake_minimum_required(VERSION 3.22)
-  project("PCIe Communication Server" LANGUAGES C CXX)
+  project(warp-pipe LANGUAGES C CXX)
 
   set(CMAKE_C_STANDARD 11)
   set(CMAKE_BUILD_TYPE Debug)
@@ -46,7 +46,7 @@ if (NOT DEFINED ZEPHYR_BASE)
   )
 
   # shared sources between the server and test suite
-  set(pcie_comm_src
+  set(warp_pipe_src
     ${CMAKE_SOURCE_DIR}/src/server.c
     ${CMAKE_SOURCE_DIR}/src/client.c
     ${CMAKE_SOURCE_DIR}/src/crc.c
@@ -54,19 +54,19 @@ if (NOT DEFINED ZEPHYR_BASE)
   )
 
   # sources of the test suite
-  set(pcie_comm_test_src
+  set(warp_pipe_test_src
     ${CMAKE_SOURCE_DIR}/tests/common.cc
     ${CMAKE_SOURCE_DIR}/tests/test_client.cc
     ${CMAKE_SOURCE_DIR}/tests/test_crc.cc
     ${CMAKE_SOURCE_DIR}/tests/test_server.cc
   )
 
-  set(pcie_comm_cflags
+  set(warp_pipe_cflags
     -Wall
     -Werror
   )
 
-  set(pcie_comm_test_cflags
+  set(warp_pipe_test_cflags
     -fprofile-arcs
     -ftest-coverage
     -fsanitize=address
@@ -74,25 +74,25 @@ if (NOT DEFINED ZEPHYR_BASE)
 
   add_executable(server
     ${CMAKE_SOURCE_DIR}/src/main.c
-    ${pcie_comm_src}
+    ${warp_pipe_src}
   )
 
   target_compile_options(server
     PRIVATE
-      ${pcie_comm_cflags}
+      ${warp_pipe_cflags}
   )
 
   set(PACKAGE_SOVERSION 0)
   set(PACKAGE_VERSION ${PACKAGE_SOVERSION}.0.0)
 
-  add_library(pcied SHARED
-    ${pcie_comm_src}
+  add_library(warppipe SHARED
+    ${warp_pipe_src}
   )
-  target_compile_options(pcied
+  target_compile_options(warppipe
     PRIVATE
-      ${pcie_comm_cflags}
+      ${warp_pipe_cflags}
   )
-  set_target_properties(pcied PROPERTIES
+  set_target_properties(warppipe PROPERTIES
     VERSION ${PACKAGE_VERSION}
     SOVERSION ${PACKAGE_SOVERSION}
   )
@@ -101,11 +101,11 @@ if (NOT DEFINED ZEPHYR_BASE)
   set(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
   set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
   set(prefix ${CMAKE_INSTALL_PREFIX})
-  configure_file(pcied.pc.in ${CMAKE_CURRENT_BINARY_DIR}/pcied.pc @ONLY)
+  configure_file(warp-pipe.pc.in ${CMAKE_CURRENT_BINARY_DIR}/warp-pipe.pc @ONLY)
 
   install(DIRECTORY inc/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/pcied.pc
+    ${CMAKE_CURRENT_BINARY_DIR}/warp-pipe.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
   )
   install(FILES
@@ -113,11 +113,11 @@ if (NOT DEFINED ZEPHYR_BASE)
     README.md
     DESTINATION ${CMAKE_INSTALL_DOCDIR}
   )
-  install(TARGETS pcied LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(TARGETS warppipe LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
   add_executable(server-tests
-    ${pcie_comm_src}
-    ${pcie_comm_test_src}
+    ${warp_pipe_src}
+    ${warp_pipe_test_src}
   )
 
   find_package(PkgConfig REQUIRED)
@@ -135,8 +135,8 @@ if (NOT DEFINED ZEPHYR_BASE)
 
   target_compile_options(server-tests
     PRIVATE
-      ${pcie_comm_cflags}
-      ${pcie_comm_test_cflags}
+      ${warp_pipe_cflags}
+      ${warp_pipe_test_cflags}
       ${GTEST_MAIN_CFLAGS_OTHER}
   )
 

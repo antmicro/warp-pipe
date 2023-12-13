@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-#ifndef PCIE_COMM_SERVER_H
-#define PCIE_COMM_SERVER_H
+#ifndef WARP_PIPE_SERVER_H
+#define WARP_PIPE_SERVER_H
 
 #include <sys/select.h>
 
 #include <stdbool.h>
 
-#include <pcie_comm/client.h>
-#include <pcie_comm/config.h>
+#include <warppipe/client.h>
+#include <warppipe/config.h>
 
-typedef void (*server_client_accept_cb_t)(struct client_t *client, void *opaque);
+typedef void (*warppipe_server_accept_cb_t)(struct warppipe_client_t *client, void *opaque);
 
-struct server_t {
+struct warppipe_server_t {
 	/* server's socket fd */
 	int fd;
 
@@ -53,19 +53,19 @@ struct server_t {
 	fd_set read_fds;
 
 	/* client linked-list */
-	struct client_q clients;
+	struct warppipe_client_q clients;
 
 	/* optional parameter to server_client_accept_cb function */
 	void *opaque;
 
 	/* called after new client is accepted */
-	server_client_accept_cb_t server_client_accept_cb;
+	warppipe_server_accept_cb_t accept_cb;
 };
 
-int server_create(struct server_t *server);
-void server_loop(struct server_t *server);
-void server_disconnect_clients(struct server_t *server, bool
-		(*condition)(struct client_t *client));
-void server_register_accept_cb(struct server_t *server, server_client_accept_cb_t server_client_accept_cb);
+int warppipe_server_create(struct warppipe_server_t *server);
+void warppipe_server_loop(struct warppipe_server_t *server);
+void warppipe_server_disconnect_clients(struct warppipe_server_t *server, bool
+		(*condition)(struct warppipe_client_t *client));
+void warppipe_server_register_accept_cb(struct warppipe_server_t *server, warppipe_server_accept_cb_t server_accept_cb);
 
-#endif /* PCIE_COMM_SERVER_H */
+#endif /* WARP_PIPE_SERVER_H */

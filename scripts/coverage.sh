@@ -20,4 +20,4 @@ set -euxo pipefail
 mkdir -p coverage
 lcov --include '*/src/*' --no-external -c -i -d . -o coverage/lcov_base.info
 lcov --include '*/src/*' --no-external -c -d . -o coverage/lcov_test.info
-genhtml --legend -o coverage --title='PCIe Communication Server' coverage/lcov_base.info coverage/lcov_test.info
+genhtml --legend -o coverage --title='Warp Pipe' coverage/lcov_base.info coverage/lcov_test.info

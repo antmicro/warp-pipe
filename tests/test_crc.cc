@@ -19,12 +19,12 @@
 #include "common.h"
 
 extern "C" {
-#include <pcie_comm/proto.h>
-#include <pcie_comm/crc.h>
+#include <warppipe/proto.h>
+#include <warppipe/crc.h>
 }
 
 TEST(TestCrc, Crc32Correct) {
-	struct pcie_transport tport = {
+	struct warppipe_pcie_transport tport = {
 		.t_proto = PCIE_PROTO_TLP,
 		.t_tlp = {
 			.dl_seqno_hi = 0,
@@ -47,7 +47,7 @@ TEST(TestCrc, Crc32Correct) {
 }
 
 TEST(TestCrc, Crc16Correct) {
-	struct pcie_transport tport = {
+	struct warppipe_pcie_transport tport = {
 		.t_proto = PCIE_PROTO_DLLP,
 		.t_dllp = {
 			.dl_acknak = {

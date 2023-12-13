@@ -14,7 +14,7 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.20.0)
-set(QEMU_EXTRA_FLAGS -device pipe,connect=127.1:2115)
+set(QEMU_EXTRA_FLAGS -device warp-pipe,connect=127.0.0.1:2115)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(pcie_pipe)
