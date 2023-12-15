@@ -857,7 +857,7 @@ TEST(TestClient, ClientTlpReqSetAddr) {
 	ASSERT_EQ(tport.t_tlp.dl_tlp.tlp_length_lo, 1); // 1 DW length, but no bytes enabled
 	ASSERT_EQ(tport.t_tlp.dl_tlp.tlp_req.r_first_be, 0x0);
 	ASSERT_EQ(tport.t_tlp.dl_tlp.tlp_req.r_last_be, 0x0);
-	ASSERT_EQ(tlp_data_length_bytes(tlp), -1);
+	ASSERT_EQ(tlp_data_length_bytes(tlp), 0);
 
 	tlp_req_set_addr(tlp, 0x2, 0); // addr not aligned, 0 bytes (0 DW)
 	ASSERT_EQ(tlp_req_get_addr(tlp), 0x0);
@@ -865,7 +865,7 @@ TEST(TestClient, ClientTlpReqSetAddr) {
 	ASSERT_EQ(tport.t_tlp.dl_tlp.tlp_length_lo, 1);
 	ASSERT_EQ(tport.t_tlp.dl_tlp.tlp_req.r_first_be, 0x0);
 	ASSERT_EQ(tport.t_tlp.dl_tlp.tlp_req.r_last_be, 0x0);
-	ASSERT_EQ(tlp_data_length_bytes(tlp), -1);
+	ASSERT_EQ(tlp_data_length_bytes(tlp), 0);
 
 	tlp_req_set_addr(tlp, 0x5, 0); // addr not aligned, 0 bytes (0 DW)
 	ASSERT_EQ(tlp_req_get_addr(tlp), 0x4);
@@ -873,7 +873,7 @@ TEST(TestClient, ClientTlpReqSetAddr) {
 	ASSERT_EQ(tport.t_tlp.dl_tlp.tlp_length_lo, 1);
 	ASSERT_EQ(tport.t_tlp.dl_tlp.tlp_req.r_first_be, 0x0);
 	ASSERT_EQ(tport.t_tlp.dl_tlp.tlp_req.r_last_be, 0x0);
-	ASSERT_EQ(tlp_data_length_bytes(tlp), -1);
+	ASSERT_EQ(tlp_data_length_bytes(tlp), 0);
 
 	tlp_req_set_addr(tlp, 0x1, 2); // addr not aligned, 2 bytes (1 DW)
 	ASSERT_EQ(tlp_req_get_addr(tlp), 0x0);

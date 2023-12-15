@@ -28,59 +28,34 @@ int tlp_data_length_bytes(const struct pcie_tlp *pkt)
 {
 	int data_len_bytes = tlp_data_length(pkt) * 4;
 
-	if (pkt->tlp_req.r_last_be == 0x0) { // less than single DW
-		switch (pkt->tlp_req.r_first_be) {
-		case 0x1:
-		case 0x2:
-		case 0x4:
-		case 0x8:
-			return 1;
-		case 0x3:
-		case 0x6:
-		case 0xc:
-			return 2;
-		case 0x5:
-		case 0x7:
-		case 0xa:
-		case 0xe:
-			return 3;
-		case 0x9:
-		case 0xb:
-		case 0xd:
-		case 0xf:
-			return 4;
-		}
-	} else if ((pkt->tlp_req.r_first_be & 0x1) == 0x1 && (pkt->tlp_req.r_last_be & 0x8) == 0x8) {
-		return data_len_bytes;
-	} else if ((pkt->tlp_req.r_first_be & 0x1) == 0x1 && (pkt->tlp_req.r_last_be & 0xc) == 0x4) {
-		return data_len_bytes - 1;
-	} else if ((pkt->tlp_req.r_first_be & 0x1) == 0x1 && (pkt->tlp_req.r_last_be & 0xe) == 0x2) {
-		return data_len_bytes - 2;
-	} else if ((pkt->tlp_req.r_first_be & 0x1) == 0x1 && (pkt->tlp_req.r_last_be == 0x1)) {
-		return data_len_bytes - 3;
-	} else if ((pkt->tlp_req.r_first_be & 0x3) == 0x2 && (pkt->tlp_req.r_last_be & 0xc) == 0x4) {
-		return data_len_bytes - 2;
-	} else if ((pkt->tlp_req.r_first_be & 0x3) == 0x2 && (pkt->tlp_req.r_last_be & 0xe) == 0x2) {
-		return data_len_bytes - 3;
-	} else if ((pkt->tlp_req.r_first_be & 0x3) == 0x2 && (pkt->tlp_req.r_last_be == 0x1)) {
-		return data_len_bytes - 4;
-	} else if ((pkt->tlp_req.r_first_be & 0x7) == 0x4 && (pkt->tlp_req.r_last_be & 0xc) == 0x4) {
-		return data_len_bytes - 3;
-	} else if ((pkt->tlp_req.r_first_be & 0x7) == 0x4 && (pkt->tlp_req.r_last_be & 0xe) == 0x2) {
-		return data_len_bytes - 4;
-	} else if ((pkt->tlp_req.r_first_be & 0x7) == 0x4 && (pkt->tlp_req.r_last_be == 0x1)) {
-		return data_len_bytes - 5;
-	} else if ((pkt->tlp_req.r_first_be == 0x8) && (pkt->tlp_req.r_last_be == 0xf)) {
-		return data_len_bytes - 3;
-	} else if ((pkt->tlp_req.r_first_be == 0x8) && (pkt->tlp_req.r_last_be & 0xc) == 0x4) {
-		return data_len_bytes - 4;
-	} else if ((pkt->tlp_req.r_first_be == 0x8) && (pkt->tlp_req.r_last_be & 0xe) == 0x2) {
-		return data_len_bytes - 5;
-	} else if ((pkt->tlp_req.r_first_be == 0x8) && (pkt->tlp_req.r_last_be == 0x1)) {
-		return data_len_bytes - 6;
-	}
-	return -1;
+	int last_be = data_len_bytes == 4 ? pkt->tlp_req.r_first_be : pkt->tlp_req.r_last_be;
 
+	/* [PCIe 5.0 spec about bit order]
+	 * Contiguous Byte Enables examples:
+	 *   First DW BE: 1100b, Last DW BE: 0011b
+	 *   First DW BE: 1000b, Last DW BE: 0111b
+	 */
+	if (pkt->tlp_req.r_first_be & 1)
+		data_len_bytes -= 0;
+	else if (pkt->tlp_req.r_first_be & 2)
+		data_len_bytes -= 1;
+	else if (pkt->tlp_req.r_first_be & 4)
+		data_len_bytes -= 2;
+	else if (pkt->tlp_req.r_first_be & 8)
+		data_len_bytes -= 3;
+	else
+		return data_len_bytes == 4 ? 0 : -1;  // zero-length accesses
+
+	if (last_be & 8)
+		return data_len_bytes;
+	if (last_be & 4)
+		return data_len_bytes - 1;
+	if (last_be & 2)
+		return data_len_bytes - 2;
+	if (last_be & 1)
+		return data_len_bytes - 3;
+
+	return -1;
 }
 
 int tlp_total_length(const struct pcie_tlp *pkt)
@@ -117,25 +92,19 @@ void tlp_req_set_addr(struct pcie_tlp *pkt, uint64_t addr, int length)
 
 	addr &= ~3ULL;
 
-	pkt->tlp_req.r_first_be = 0x0;
-	pkt->tlp_req.r_last_be = 0x0;
-
-	for (int i = align; i < length_with_align; i++) {
-		pkt->tlp_req.r_first_be <<= 0x1;
-		pkt->tlp_req.r_first_be |= (0x1 << align);
-	}
+	pkt->tlp_req.r_first_be = 0xf << align;
+	pkt->tlp_req.r_last_be = 0xf >> (-length_with_align & 3);
 
 	if (length_with_align <= 4) {
+		pkt->tlp_req.r_first_be &= pkt->tlp_req.r_last_be;
 		pkt->tlp_req.r_last_be = 0x0;
-	} else if (length_with_align % 4 == 0) {
-		pkt->tlp_req.r_last_be = 0xf;
-	} else {
-		for (int i = 0; i < length_with_align % 4; i++) {
-			pkt->tlp_req.r_last_be <<= 0x1;
-			pkt->tlp_req.r_last_be |= 0x1;
-		}
 	}
 
+	// special case: zero-length read/write
+	if (length == 0) {
+		length = 4;
+		pkt->tlp_req.r_first_be = 0;
+	}
 
 	length = (length_with_align + 4 - 1) / 4;
 
