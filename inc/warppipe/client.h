@@ -32,7 +32,7 @@ struct warppipe_completion_status_t {
 typedef int (*warppipe_read_cb_t)(uint64_t addr, void *data, int length, void *opaque);
 typedef void (*warppipe_write_cb_t)(uint64_t addr, const void *data, int length, void *opaque);
 
-typedef void (*warppipe_completion_cb_t)(const struct warppipe_completion_status_t completion_status, const void *data, int length);
+typedef void (*warppipe_completion_cb_t)(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *opaque);
 
 /* client struct */
 struct warppipe_client_t {

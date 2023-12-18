@@ -211,7 +211,7 @@ static const char *dma_emul_block_config_to_string(const struct dma_block_config
 static uint8_t result;
 static bool got_result = false;
 
-static void pcie_completion_cb(const struct warppipe_completion_status_t completion_status, const void *data, int length)
+static void pcie_completion_cb(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
 {
 	uint8_t *response = (uint8_t *)data;
 

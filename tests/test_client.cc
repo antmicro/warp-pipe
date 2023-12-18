@@ -551,7 +551,7 @@ TEST(TestClient, ClientPcieRead) {
 
 	ASSERT_EQ(rc, 0);
 
-	rc = warppipe_read(&client, 0, 0x0, 40, [](const struct warppipe_completion_status_t completion_status, const void *data, int length)
+	rc = warppipe_read(&client, 0, 0x0, 40, [](const struct warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
 	{
 		uint8_t *result = (uint8_t *)data;
 		ASSERT_EQ(completion_status.error_code, 0);
@@ -673,7 +673,7 @@ TEST(TestClient, ClientPcieSmallRead) {
 	}, NULL);
 	ASSERT_EQ(rc_bar, 0);
 
-	int rc_read = warppipe_read(&client, 0, 0x0, read_size, [](const struct warppipe_completion_status_t completion_status, const void *data, int length)
+	int rc_read = warppipe_read(&client, 0, 0x0, read_size, [](const struct warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
 	{
 		uint8_t *result = (uint8_t *)data;
 		ASSERT_EQ(completion_status.error_code, 0);
