@@ -24,7 +24,6 @@
 #define DATA_SIZE 32
 typedef int8_t dma_data_type;
 
-dma_data_type *data;
 dma_data_type *data_end;
 
 void finished_cb(const struct device *dev, void *user_data,
@@ -37,14 +36,13 @@ void finished_cb(const struct device *dev, void *user_data,
 		printf("0x%x ", data_end[i]);
 	printf("\n");
 
-	free(data);
 	free(data_end);
 }
 
 void configure_dma(const struct device *const dma_device, int32_t channel)
 {
 	struct dma_block_config block = {
-		.source_address = (uint32_t) data,
+		.source_address = 0x0, // address offset in remote DMA memory
 		.dest_address = (uint32_t) data_end,
 		.block_size = DATA_SIZE
 	};
@@ -63,13 +61,8 @@ void configure_dma(const struct device *const dma_device, int32_t channel)
 int main(void)
 {
 	const struct device *const dma_device = DEVICE_DT_GET(DT_NODELABEL(dma));
-	int32_t i;
 
-	data = malloc(DATA_SIZE * sizeof(dma_data_type));
 	data_end = malloc(DATA_SIZE * sizeof(dma_data_type));
-
-	for (i = 0; i < DATA_SIZE; ++i)
-		data[i] = (dma_data_type) i;
 
 	configure_dma(dma_device, 0);		// Configure the channel
 	dma_start(dma_device, 0);		// Start transmition

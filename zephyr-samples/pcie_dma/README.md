@@ -31,15 +31,6 @@ cmake -S memory-mock -B build
 make -j $(nproc) -C build
 ```
 
-To allow communication between zephyr and host, `zeth` interface is needed.
-This interface can be setup using `net-setup.sh` from `net-tools` repository:
-<!-- name="pcie-dma-net-setup" -->
-```
-../tools/net-tools/net-setup.sh &
-# save PID for later
-NET_TOOLS_PID=$!
-```
-
 Now you can launch both `memory-mock` and this sample:
 <!-- name="pcie-dma-run" -->
 ```
@@ -60,5 +51,4 @@ After that, you can terminate all background processes:
 sleep 10
 kill -2 $ZEPHYR_PID
 kill -2 $SERVER_PID
-kill -2 $NET_TOOLS_PID
 ```
