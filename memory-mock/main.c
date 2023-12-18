@@ -83,7 +83,7 @@ int read_cb_imp(uint64_t addr, void *data, int length, void *opaque)
 
 void server_client_accept(struct warppipe_client_t *client, void *opaque)
 {
-	warppipe_register_read_cb(client, read_cb_imp);
+	warppipe_register_bar(client, 0x1000, 4 * 1024, 0, read_cb_imp, NULL);
 }
 
 int main(int argc, char *argv[])
