@@ -14,7 +14,7 @@
 # limitations under the License.
 
 if (NOT DEFINED ZEPHYR_BASE)
-  cmake_minimum_required(VERSION 3.22)
+  cmake_minimum_required(VERSION 3.20)
   project(warp-pipe LANGUAGES C CXX)
 
   set(CMAKE_C_STANDARD 11)
