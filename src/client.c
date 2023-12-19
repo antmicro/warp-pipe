@@ -182,7 +182,7 @@ void handle_completion(struct warppipe_client_t *client, const struct pcie_tlp *
 
 	int data_len = pkt->tlp_cpl.c_byte_count_hi << 8 | pkt->tlp_cpl.c_byte_count_lo;
 
-	client->completion_cb[pkt->tlp_cpl.c_tag](completion_status, pkt->tlp_cpl.c_data, data_len);
+	client->completion_cb[pkt->tlp_cpl.c_tag](completion_status, pkt->tlp_cpl.c_data, data_len, client->opaque);
 	client->completion_cb[pkt->tlp_cpl.c_tag] = NULL;
 }
 
