@@ -36,5 +36,5 @@ Syslog
 To view logs, use:
 
 ```
-journalctl -t warp-pipe -f
+journalctl -f
 ```
