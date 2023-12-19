@@ -1,31 +1,15 @@
-# PCIe Scan
+# PCIe PIPE
 
 This samples demonstrates the functionality of the ``pcie-pipe`` device from QEMU using warp-pipe.
 
 ## Preparing the environment
 
-Use the following commands to prepare the working environment:
-
-<!-- name="pcie-pipe-prep" -->
-```
-west init --local --mf zephyr-samples/warp-pipe-zephyr.yml
-west update -o=--depth=1 -n
-west zephyr-export
-```
+Please refer to [preparing the environment for Zephyr samples](../../README.md#preparing-the-environment-for-zephyr-samples) in main README.
 
 ## Building and running
 
 This sample requires installed `warp-pipe` library and `memory-mock` that acts as a end PCIe device.
-Use the following command to build `memory-mock` and install `warp-pipe`:
-<!-- name="pcie-pipe-lib-prep" -->
-```
-mkdir -p build_lib
-cmake -S . -B build_lib
-make install -j $(nproc) -C build_lib
-mkdir -p build
-cmake -S memory-mock -B build
-make -j $(nproc) -C build
-```
+Please refer to [building memory-mock](../../README.md#building-memory-mock) and [installing warp-pipe](../../README.md#building-and-installing-warp-pipe) for more information.
 
 This sample requires  also custom QEMU with warp-pipe integration. Use following commands to build it:
 <!-- name="pcie-qemu-build" -->
@@ -47,7 +31,7 @@ west build -d build.pcie_pipe/ -b qemu_x86_64 zephyr-samples/pcie_pipe/
 Now you can launch both `memory-mock` and this sample:
 <!-- name="pcie-pipe-run" -->
 ```
-./build/memory_mock &
+./build_memory_mock/memory_mock &
 SERVER_PID=$!
 west build -t run -d build.pcie_pipe/ &
 ZEPHYR_PID=$!

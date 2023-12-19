@@ -15,16 +15,15 @@ jobs:
           sudo apt-get upgrade -y -qq
           sudo apt-get install -y -qq cmake git lcov libgtest-dev
       - run: pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-      - run: tuttest README.md server-build | bash -o pipefail -
+      - run: tuttest README.md warp-pipe-build | bash -oe pipefail -
       - run: |
-          ./build/server-tests
-          ./scripts/coverage.sh
+          tuttest README.md warp-pipe-tests | bash -oe pipefail -
+          tuttest README.md warp-pipe-coverage | bash -oe pipefail -
           tar czf coverage.tar.gz coverage
       - uses: actions/upload-artifact@v3
         with:
           path: |
-              ./build/server
-              ./build/server-tests
+              ./build/warppipe-tests
               ./coverage.tar.gz
 
   Checkpatch:
@@ -44,7 +43,6 @@ jobs:
     runs-on: ubuntu-22.04
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26.2
-      options: --cap-add=NET_ADMIN --device /dev/net/tun:/dev/net/tun
     env:
       CMAKE_PREFIX_PATH: /opt/toolchains
       PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
@@ -59,7 +57,8 @@ jobs:
           apt install -y -qq libgtest-dev pkg-config
       - run: |
           pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-          tuttest zephyr-samples/pcie_scan/README.md pcie-scan-prep | bash -oe pipefail -
+          tuttest README.md warp-pipe-build,memory-mock-build | bash -oe pipefail -
+          tuttest README.md zephyr-env-prep | bash -oe pipefail -
       - run: |
           tuttest zephyr-samples/pcie_scan/README.md pcie-scan-build | bash -oe pipefail -
           tar czf pcie_scan.tar.gz build.pcie_scan
@@ -70,11 +69,11 @@ jobs:
           tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -oe pipefail -
           tar czf pcie_ivshmem.tar.gz build.pcie_ivshmem
       - run: |
-          tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build | bash -oe pipefail -
+          tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build,pcie-dma-run,pcie-dma-teardown | bash -oe pipefail -
           tar czf pcie_dma.tar.gz build.pcie_dma
-          tuttest zephyr-samples/pcie_dma/README.md pcie-dma-memory-mock,pcie-dma-net-setup,pcie-dma-run,pcie-dma-teardown | bash -oe pipefail -
       - run: |
-          tuttest zephyr-samples/pcie_pipe/README.md pcie-pipe-lib-prep,pcie-qemu-build,pcie-pipe-build,pcie-pipe-run,pcie-pipe-teardown | bash -oe pipefail -
+          tuttest zephyr-samples/pcie_pipe/README.md pcie-qemu-build,pcie-pipe-build,pcie-pipe-run,pcie-pipe-teardown | bash -oe pipefail -
+          tar czf pcie_pipe.tar.gz build.pcie_pipe
 
       - uses: actions/upload-artifact@v3
         with:

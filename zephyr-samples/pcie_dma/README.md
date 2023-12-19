@@ -6,12 +6,7 @@ This sample demonstrates the interaction using DMA over PCIe.
 
 Use the following commands to prepare the working environment:
 
-<!-- name="pcie-dma-prep" -->
-```
-west init --local --mf zephyr-samples/warp-pipe-zephyr.yml
-west update -o=--depth=1 -n
-west zephyr-export
-```
+Please refer to [preparing the environment for Zephyr samples](../../README.md#preparing-the-environment-for-zephyr-samples) in main README.
 
 ## Building and running
 
@@ -22,19 +17,13 @@ Use the following command to build this sample:
 west build -p -d build.pcie_dma -b native_sim zephyr-samples/pcie_dma/
 ```
 
-This sample requires also `memory-mock` that acts as a end PCIe device.
-Use the following command to build `memory-mock`:
-<!-- name="pcie-dma-memory-mock" -->
-```
-mkdir -p build
-cmake -S memory-mock -B build
-make -j $(nproc) -C build
-```
+This sample requires `memory-mock` that acts as a end PCIe device.
+Please refer to [building memory-mock](../../README.md#building-memory-mock) for more information.
 
 Now you can launch both `memory-mock` and this sample:
 <!-- name="pcie-dma-run" -->
 ```
-./build/memory_mock &
+./build_memory_mock/memory_mock &
 SERVER_PID=$!
 build.pcie_dma/zephyr/zephyr.exe &
 ZEPHYR_PID=$!

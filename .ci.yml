@@ -24,16 +24,15 @@ Build PCIe Communication Server:
     - python3 -m venv venv
     - source venv/bin/activate
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-    - tuttest README.md server-build | bash -oe pipefail -
+    - tuttest README.md warp-pipe-build | bash -oe pipefail -
     
-    - ./build/server-tests
-    - ./scripts/coverage.sh
+    - tuttest README.md warp-pipe-tests | bash -oe pipefail -
+    - tuttest README.md warp-pipe-coverage | bash -oe pipefail -
     - tar czf coverage.tar.gz coverage
 
   artifacts:
     paths:
-      - build/server
-      - build/server-tests
+      - build/warppipe-tests
       - coverage.tar.gz
     when: always
 
@@ -58,7 +57,8 @@ Build Zephyr Samples:
 
   script:
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-    - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-prep | bash -oe pipefail -
+    - tuttest README.md warp-pipe-build,memory-mock-build | bash -oe pipefail -
+    - tuttest README.md zephyr-env-prep | bash -oe pipefail -
 
     # PCIe Scan sample
     - tuttest zephyr-samples/pcie_scan/README.md pcie-scan-build | bash -oe pipefail -
@@ -72,15 +72,13 @@ Build Zephyr Samples:
     - tuttest zephyr-samples/pcie_ivshmem/README.md pcie-ivshmem-build | bash -oe pipefail -
     - tar czf pcie_ivshmem.tar.gz build.pcie_ivshmem
 
-    # Build PCIe DMA sample
-    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build | bash -oe pipefail -
+    # PCIe DMA sample
+    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build,pcie-dma-run,pcie-dma-teardown | bash -oe pipefail -
     - tar czf pcie_dma.tar.gz build.pcie_dma
 
-    # Run PCIe DMA sample
-    - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-memory-mock,pcie-dma-net-setup,pcie-dma-run,pcie-dma-teardown | bash -oe pipefail -
-
     # Run warp-pipe sample
-    - tuttest zephyr-samples/pcie_pipe/README.md pcie-pipe-lib-prep,pcie-qemu-build,pcie-pipe-build,pcie-pipe-run,pcie-pipe-teardown | bash -oe pipefail -
+    - tuttest zephyr-samples/pcie_pipe/README.md pcie-qemu-build,pcie-pipe-build,pcie-pipe-run,pcie-pipe-teardown | bash -oe pipefail -
+    - tar czf pcie_pipe.tar.gz build.pcie_pipe
 
   artifacts:
     paths:
