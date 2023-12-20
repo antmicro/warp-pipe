@@ -4,14 +4,7 @@ This samples demonstrates the functionality of the ``pcie_scan`` function in Zep
 
 ## Preparing the environment
 
-Use the following commands to prepare the working environment:
-
-<!-- name="pcie-scan-prep" -->
-```
-west init --local --mf zephyr-samples/warp-pipe-zephyr.yml
-west update -o=--depth=1 -n
-west zephyr-export
-```
+Please refer to [preparing the environment for Zephyr samples](../../README.md#preparing-the-environment-for-zephyr-samples) in main README.
 
 ## Building and running
 
