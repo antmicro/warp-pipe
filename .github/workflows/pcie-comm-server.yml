@@ -15,7 +15,9 @@ jobs:
           sudo apt-get upgrade -y -qq
           sudo apt-get install -y -qq cmake git lcov libgtest-dev
       - run: pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-      - run: tuttest README.md warp-pipe-build | bash -oe pipefail -
+      - run: |
+          tuttest README.md warp-pipe-build | bash -oe pipefail -
+          tuttest README.md warp-pipe-install | sudo bash -oe pipefail -
       - run: |
           tuttest README.md warp-pipe-tests | bash -oe pipefail -
           tuttest README.md warp-pipe-coverage | bash -oe pipefail -
@@ -57,7 +59,7 @@ jobs:
           apt install -y -qq libgtest-dev pkg-config
       - run: |
           pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-          tuttest README.md warp-pipe-build,memory-mock-build | bash -oe pipefail -
+          tuttest README.md warp-pipe-build,warp-pipe-install,memory-mock-build | bash -oe pipefail -
           tuttest README.md zephyr-env-prep | bash -oe pipefail -
       - run: |
           tuttest zephyr-samples/pcie_scan/README.md pcie-scan-build | bash -oe pipefail -

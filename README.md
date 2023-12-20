@@ -23,6 +23,12 @@ To build the Warp Pipe, use the following snippet:
 mkdir -p build
 cmake -S . -B build
 make -j $(nproc) -C build
+```
+
+and install it using:
+
+<!-- name="warp-pipe-install" -->
+```
 make install -C build
 ```
 
