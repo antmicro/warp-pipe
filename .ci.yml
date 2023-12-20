@@ -24,7 +24,7 @@ Build PCIe Communication Server:
     - python3 -m venv venv
     - source venv/bin/activate
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-    - tuttest README.md warp-pipe-build | bash -oe pipefail -
+    - tuttest README.md warp-pipe-build,warp-pipe-install | bash -oe pipefail -
     
     - tuttest README.md warp-pipe-tests | bash -oe pipefail -
     - tuttest README.md warp-pipe-coverage | bash -oe pipefail -
@@ -57,7 +57,7 @@ Build Zephyr Samples:
 
   script:
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
-    - tuttest README.md warp-pipe-build,memory-mock-build | bash -oe pipefail -
+    - tuttest README.md warp-pipe-build,warp-pipe-install,memory-mock-build | bash -oe pipefail -
     - tuttest README.md zephyr-env-prep | bash -oe pipefail -
 
     # PCIe Scan sample
