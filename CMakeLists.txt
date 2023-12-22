@@ -33,8 +33,6 @@ if (NOT DEFINED ZEPHYR_BASE)
   option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile-commands.json" ON)
   option(ENABLE_TESTS "Build tests" ON)
 
-  find_program(LCOV lcov REQUIRED)
-
   set(warp_pipe_cflags
     -Wall
     -Werror
@@ -43,20 +41,7 @@ if (NOT DEFINED ZEPHYR_BASE)
   set(PACKAGE_SOVERSION 0)
   set(PACKAGE_VERSION ${PACKAGE_SOVERSION}.0.0)
 
-  add_library(warppipe SHARED
-    ${warp_pipe_sources}
-  )
-
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    list(APPEND warp_pipe_cflags
-      -fprofile-arcs
-      -ftest-coverage
-    )
-    target_link_libraries(warppipe
-      PRIVATE
-        gcov
-    )
-  endif()
+  add_library(warppipe OBJECT ${warp_pipe_sources})
 
   target_include_directories(warppipe
     PUBLIC
@@ -72,6 +57,18 @@ if (NOT DEFINED ZEPHYR_BASE)
     VERSION ${PACKAGE_VERSION}
     SOVERSION ${PACKAGE_SOVERSION}
   )
+
+  set_property(TARGET warppipe PROPERTY POSITION_INDEPENDENT_CODE 1)
+
+  add_library(warppipe_shared SHARED
+    $<TARGET_OBJECTS:warppipe>
+  )
+  set_target_properties(warppipe_shared PROPERTIES OUTPUT_NAME warppipe)
+
+  add_library(warppipe_static STATIC
+    $<TARGET_OBJECTS:warppipe>
+  )
+  set_target_properties(warppipe_static PROPERTIES OUTPUT_NAME warppipe)
 
   include(GNUInstallDirs)
   set(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
@@ -89,7 +86,12 @@ if (NOT DEFINED ZEPHYR_BASE)
     README.md
     DESTINATION ${CMAKE_INSTALL_DOCDIR}
   )
-  install(TARGETS warppipe LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(TARGETS warppipe_static LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(TARGETS warppipe_shared LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    install(CODE "MESSAGE(WARNING \"Installing `Debug` build type.\n This build type should only be used for development.\n To rebuild in `Release` mode add `-DCMAKE_BUILD_TYPE=Release` to cmake command.\")")
+  endif()
 
   if (${ENABLE_TESTS})
       include(tests/CMakeLists.txt)

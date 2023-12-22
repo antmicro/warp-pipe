@@ -101,6 +101,18 @@ This environment is required to build and run samples from `zephyr-samples` fold
 More information about building each of zephyr samples can be found in respective folders.
 
 
+Running Twister tests
+---------------------
+
+This repository overrides default Zephyr `west twister` command to allow running tests that requires PCIe device implementing `warp-pipe`.
+It requires built [memory-mock](README.md#building-memory-mock).
+
+<!-- name="run-twister-tests" -->
+```
+west twister --testsuite-root zephyr-tests/
+```
+
+
 Syslog
 ------
 

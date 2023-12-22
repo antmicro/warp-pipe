@@ -12,3 +12,6 @@ manifest:
         name-allowlist:
           - cmsis
           - mbedtls
+  self:
+    path: warp-pipe
+    west-commands: zephyr-samples/west-commands.yml

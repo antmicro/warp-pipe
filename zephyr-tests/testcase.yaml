@@ -1,0 +1,8 @@
+tests:
+  testing.ztest:
+    harness: warppipe
+    harness_config:
+      type: ../build_memory_mock/memory_mock
+    platform_allow:
+      - native_sim_64
+    tags: tests
