@@ -271,8 +271,9 @@ void warppipe_client_read(struct warppipe_client_t *client)
 				client->active = false;
 				return;
 			}
-			total += 7;  // 7 = 1B proto + 2B DL header + 4B DL LCRC32
-			syslog(LOG_DEBUG, "Recieved TLP packed len: %d", total + len);
+
+			total += len; // add DLLP length
+			syslog(LOG_DEBUG, "Received TLP packed len: %d", total);
 
 			assert(total <= CLIENT_BUFFER_SIZE);
 			while (len < total) {
