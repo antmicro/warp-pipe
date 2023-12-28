@@ -8,5 +8,6 @@ Version: @PACKAGE_VERSION@
 Description: PCIe packet transport server library
 URL: https://github.com/antmicro/warp-pipe
 
+Requires: yaml-0.1
 Libs: -L${libdir} -lwarppipe @LIBS@
 Cflags: -I${includedir}

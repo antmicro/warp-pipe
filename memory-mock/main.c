@@ -101,8 +101,8 @@ static int8_t bar0_memory[128] = {
 static int8_t bar1_memory[1024] = {};
 
 static struct pcie_configuration_space_header_type0 configuration_space = {
-	.vendor_id = 0x1,
-	.device_id = 0x2,
+	.vendor_id[0] = 0x1,
+	.device_id[0] = 0x2,
 	.header_type = 0x0,
 };
 

@@ -18,14 +18,14 @@ Build PCIe Communication Server:
     - apt update -qq
     - apt-mark hold tzdata # don't update tzdata, as it sometimes fails to update in CI
     - apt upgrade -y -qq
-    - apt install -y -qq cmake python3-dev python3-pip python3-venv git lcov libgtest-dev pkg-config
+    - apt install -y -qq cmake python3-dev python3-pip python3-venv git lcov libgtest-dev pkg-config libyaml-0-2 libyaml-dev
 
   script:
     - python3 -m venv venv
     - source venv/bin/activate
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
     - tuttest README.md warp-pipe-build,warp-pipe-install | bash -oe pipefail -
-    
+
     - tuttest README.md warp-pipe-tests | bash -oe pipefail -
     - tuttest README.md warp-pipe-coverage | bash -oe pipefail -
     - tar czf coverage.tar.gz coverage
@@ -53,7 +53,7 @@ Build Zephyr Samples:
     - apt update -qq
     - apt-mark hold tzdata # don't update tzdata, as it sometimes fails to update in CI
     - apt upgrade -y -qq
-    - apt install -y -qq cmake python3-dev python3-pip python3-venv git lcov libgtest-dev pkg-config
+    - apt install -y -qq cmake python3-dev python3-pip python3-venv git lcov libgtest-dev pkg-config libyaml-0-2 libyaml-dev
 
   script:
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
@@ -119,7 +119,7 @@ Twister tests:
     - apt update -qq
     - apt-mark hold tzdata # don't update tzdata, as it sometimes fails to update in CI
     - apt upgrade -y -qq
-    - apt install -y -qq cmake python3-dev python3-pip python3-venv git lcov libgtest-dev pkg-config
+    - apt install -y -qq cmake python3-dev python3-pip python3-venv git lcov libgtest-dev pkg-config libyaml-0-2 libyaml-dev
 
   script:
     - pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
