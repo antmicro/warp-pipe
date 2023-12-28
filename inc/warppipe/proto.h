@@ -260,43 +260,6 @@ struct warppipe_pcie_transport {
 	};
 };
 
-// Address space: Configuration; Transaction types: read,write; (p. 104 PCIE BSR rev 5.0)
-
-// Fmt and Type field encodings (p. 109 PCIE BSR rev 5.0)
-//
-// TLP Type | FMT  |  Type   | Description
-// ---------|------|---------|----------------------------
-// CfgRd0   | 000  | 0 0100  | Configuration Read Type 0
-// CfgWr0   | 010  | 0 0100  | Configuration Write Type 0
-
-// Type 0 Configuration Space Header
-struct pcie_configuration_space_header {
-	uint16_t vendor_id: 16; // HwInit
-	uint16_t device_id: 16;
-	uint16_t command: 16;
-	uint16_t status: 16;
-	uint8_t revision_id: 8;
-	uint32_t class_code: 24;
-	uint8_t cache_line_size: 8;
-	uint8_t latency_timer: 8;
-	uint8_t header_type: 8;
-	uint8_t bist: 8;
-
-	uint32_t bar[6];
-
-	uint32_t cardbus_cis_pointer: 32;
-	uint16_t subsystem_vendor_id: 16;
-	uint16_t subsystem_id: 16;
-	uint32_t expansion_rom_base_address: 32;
-	uint8_t capabilities_pointer: 8;
-	uint32_t _reserved0: 24;
-	uint32_t _reserved1: 32;
-	uint8_t interrupt_line: 8;
-	uint8_t interrupt_pin: 8;
-	uint8_t min_gnt: 8; // Does not apply to PCI Express. Read-only. Hardwire to 0.
-	uint8_t max_lat: 8; // Does not apply to PCI Express. Read-only. Hardwire to 0.
-};
-
 static_assert(sizeof(struct pcie_dllp) == 6);
 static_assert(sizeof(struct pcie_tlp) == 16);
 static_assert(sizeof(struct warppipe_pcie_transport) == 23);
