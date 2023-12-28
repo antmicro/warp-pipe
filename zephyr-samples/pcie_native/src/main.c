@@ -79,15 +79,24 @@ static int wait_for_completion(struct read_compl_data_t *read_data)
 static int read_config_data(struct warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf)
 {
 	int ret;
+	uint64_t aligned_addr = addr & ~0x3;
+	uint64_t offset = addr & 0x3;
+	uint32_t aligned_buf;
+
+	if (length + offset > 4) {
+		LOG_ERR("%s: Invalid arguments: 0x%x, %d", __func__, addr, length);
+		return -1;
+	}
+
 	struct read_compl_data_t read_data = {
 		.finished = false,
-		.buf = (void *)buf,
-		.buf_size = length,
+		.buf = (void *)&aligned_buf,
+		.buf_size = 4,
 		.ret = 0,
 	};
 
 	client->private_data = (void *)&read_data;
-	ret = warppipe_config0_read(client, addr, length, &read_compl);
+	ret = warppipe_config0_read(client, aligned_addr, 4, &read_compl);
 	if (ret < 0) {
 		LOG_ERR("Failed to read config space at addr %lx-%lx", addr, addr + length);
 		return ret;
@@ -97,6 +106,7 @@ static int read_config_data(struct warppipe_client_t *client, uint64_t addr, int
 	if (ret < 0)
 		return ret;
 
+	memcpy(buf, (uint8_t *)&aligned_buf + offset, length);
 	return read_data.ret;
 }
 
