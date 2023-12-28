@@ -37,73 +37,102 @@ static struct warppipe_server_t pcie_server = {
 	.quit = false,
 };
 
-static bool read_compl_finished;
-static uint8_t *read_compl_buf;
-static int read_compl_ret;
+struct read_compl_data_t {
+	uint8_t *buf;
+	uint32_t buf_size;
+	int ret;
+	bool finished;
+};
 
 static void read_compl(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *opaque)
 {
-	read_compl_finished = true;
+	struct read_compl_data_t *read_data = (struct read_compl_data_t *)opaque;
+
+	read_data->finished = true;
+
 	if (completion_status.error_code) {
-		read_compl_ret = completion_status.error_code;
+		read_data->ret = completion_status.error_code;
 		return;
 	}
-	read_compl_ret = length;
-	memcpy(read_compl_buf, data, length);
+
+	if (length > read_data->buf_size) {
+		LOG_WRN("Read %d bytes, expected at most %d", length, read_data->buf_size);
+		length = read_data->buf_size;
+	}
+
+	read_data->ret = length;
+	memcpy(read_data->buf, data, length);
 }
 
-static void wait_for_completion(void)
+static int wait_for_completion(struct read_compl_data_t *read_data)
 {
-	read_compl_finished = false;
-	while (!read_compl_finished && !pcie_server.quit)
+	while (!read_data->finished && !pcie_server.quit)
 		warppipe_server_loop(&pcie_server);
 
-	if (pcie_server.quit)
+	if (pcie_server.quit) {
 		LOG_ERR("Server disconnected");
+		return -1;
+	}
+	return 0;
 }
 
-int read_config_data(struct warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf)
+static int read_config_data(struct warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf)
 {
 	int ret;
+	struct read_compl_data_t read_data = {
+		.finished = false,
+		.buf = (void *)buf,
+		.buf_size = length,
+		.ret = 0,
+	};
 
-	read_compl_buf = buf;
+	client->private_data = (void *)&read_data;
 	ret = warppipe_config0_read(client, addr, length, &read_compl);
 	if (ret < 0) {
 		LOG_ERR("Failed to read config space at addr %lx-%lx", addr, addr + length);
 		return ret;
 	}
-	wait_for_completion();
-	return read_compl_ret;
+
+	ret = wait_for_completion(&read_data);
+	if (ret < 0)
+		return ret;
+
+	return read_data.ret;
 }
 
-int read_data(struct warppipe_client_t *client, int bar, uint64_t addr, int length, uint8_t *buf)
+static int read_data(struct warppipe_client_t *client, int bar, uint64_t addr, int length, uint8_t *buf)
 {
 	int ret;
+	struct read_compl_data_t read_data = {
+		.finished = false,
+		.buf = (void *)buf,
+		.buf_size = length,
+		.ret = 0,
+	};
 
-	read_compl_buf = buf;
+	client->private_data = (void *)&read_data;
 	ret = warppipe_read(client, bar, addr, length, &read_compl);
 	if (ret < 0) {
 		LOG_ERR("Failed to read bar %d at addr %lx-%lx", bar, addr, addr + length);
 		return ret;
 	}
-	wait_for_completion();
-	return read_compl_ret;
+
+	ret = wait_for_completion(&read_data);
+	if (ret < 0)
+		return ret;
+
+	return read_data.ret;
 }
 
-void print_read_data(uint8_t *buffer, int length)
+static void print_read_data(uint8_t *buffer, int length)
 {
-	if (length <= 0) {
-		LOG_ERR("Read error: %d", length);
-		return;
-	}
-
-	LOG_PRINTK("Read data:");
+	LOG_PRINTK("Read data (len: %d):", length);
 	for (int i = 0; i < length; i++)
 		LOG_PRINTK(" %02x", buffer[i]);
 	LOG_PRINTK("\n");
 }
 
-int enumerate(struct warppipe_client_t *client)
+static int enumerate(struct warppipe_client_t *client)
 {
 	int ret;
 	uint16_t vendor_id;
@@ -154,7 +183,9 @@ int enumerate(struct warppipe_client_t *client)
 		if (ret < 0)
 			continue;
 	}
+
 	/* TODO: Enable memory in command register. */
+
 	return 0;
 }
 
@@ -166,10 +197,10 @@ int main(void)
 
 	if (warppipe_server_create(&pcie_server) == -1) {
 		LOG_ERR("Failed to create server!");
-		return 1;
+		return -1;
 	}
 
-	LOG_INF("Started server");
+	LOG_INF("Started client");
 
 	struct warppipe_client_t *client = TAILQ_FIRST(&pcie_server.clients)->client;
 
@@ -182,22 +213,25 @@ int main(void)
 	uint8_t buf[16];
 
 	ret = read_data(client, 0, 0, 16, buf);
+	assert(ret == 16);
 	print_read_data(buf, ret);
 
 	ret = read_data(client, 1, 0, 16, buf);
+	assert(ret == 16);
 	print_read_data(buf, ret);
 
 	memcpy(buf, "hello", 5);
-
 	ret = warppipe_write(client, 1, 0, buf, strlen("hello"));
-	LOG_INF("Write to bar 2: %d", ret);
+	assert(ret == 0);
 
 	ret = read_data(client, 1, 0, 16, buf);
+	assert(ret == 16);
 	print_read_data(buf, ret);
 
 	LOG_INF("The next read should fail");
 	ret = read_data(client, 2, 0, 16, buf);
-	print_read_data(buf, ret);
+	assert(ret == -1);
 
+	LOG_INF("All checks has succeded.");
 	return 0;
 }
