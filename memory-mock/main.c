@@ -48,6 +48,16 @@ static void handle_sigint(int signo)
 	warppipe_server_disconnect_clients(&server, NULL);
 }
 
+/* XXX: temporary PCIe configuration space structure */
+struct pcie_configuration_space_header {
+	uint16_t	vendor_id;
+	uint16_t	device_id;
+	uint8_t		__unused[10];
+	uint8_t		header_type;
+	uint8_t		__unused_bist;
+	uint32_t	bar[6];
+};
+
 struct bar_config_t {
 	uint8_t config;
 	uint32_t size;
@@ -174,8 +184,7 @@ DEFINE_BAR_WRITE_CB(1)
 static struct pcie_configuration_space_header configuration_space = {
 	.vendor_id = 0x1,
 	.device_id = 0x2,
-	.command = 0x0,
-	.status = 0x0,
+	.header_type = 0x0,
 };
 
 static struct warppipe_client_t *mock_dev_client;
@@ -227,10 +236,11 @@ void config0_write_cb(uint64_t addr, const void *data, int length, void *private
 
 	uint32_t *input = (uint32_t *)data;
 
+
 	if (BAR_ADDR(addr))
 		handle_bar_write(BAR_IDX(addr), le32toh(*input), length);
 	else
-		syslog(LOG_NOTICE,  "Unhandled config0 write to %lx\n", addr);
+		syslog(LOG_NOTICE,  "Unhandled config0 write to 0x%lx\n", addr);
 }
 
 void server_client_accept(struct warppipe_client_t *client, void *private_data)
