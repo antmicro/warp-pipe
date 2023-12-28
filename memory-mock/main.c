@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include <endian.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -186,11 +187,8 @@ static struct warppipe_client_t *mock_dev_client;
 	(((addr) - offsetof(struct pcie_configuration_space_header, bar)) / sizeof(uint32_t))
 
 
-void handle_bar_write(uint64_t addr, const void *data, int length)
+void handle_bar_write(int bar_idx, uint32_t value, int length)
 {
-	int bar_idx = BAR_IDX(addr);
-	uint32_t value = *((uint32_t *)data);
-
 	struct bar_config_t bar = bars_config[bar_idx];
 	uint32_t bar_addr = value & ~BAR_MASK_SIZE(bar.size);
 
@@ -205,17 +203,32 @@ void handle_bar_write(uint64_t addr, const void *data, int length)
 
 int config0_read_cb(uint64_t addr, void *data, int length, void *private_data)
 {
-	uint8_t *read_addr = ((uint8_t *)&configuration_space) + addr;
+	// XXX: only 4B aligned accesses are allowed here
+	if ((addr & 0x3) || (length != 4)) {
+		syslog(LOG_ERR, "Unaligned read from config0 (0x%lx)", addr);
+		return 1;
+	}
 
-	memcpy(data, read_addr, length);
+	uint32_t *read_addr = (uint32_t *)(((uint8_t *)&configuration_space) + addr);
+	uint32_t *output = (uint32_t *)data;
+
+	*output = htole32(*read_addr);
+
 	return 0;
 }
 
 void config0_write_cb(uint64_t addr, const void *data, int length, void *private_data)
 {
-	// XXX: only 4B aligned writes will be caught here!
+	// XXX: only 4B aligned writes are allowed here
+	if ((addr & 0x3) || (length != 4)) {
+		syslog(LOG_ERR, "Unaligned read from config0 (0x%lx)", addr);
+		return;
+	}
+
+	uint32_t *input = (uint32_t *)data;
+
 	if (BAR_ADDR(addr))
-		handle_bar_write(addr, data, length);
+		handle_bar_write(BAR_IDX(addr), le32toh(*input), length);
 	else
 		syslog(LOG_NOTICE,  "Unhandled config0 write to %lx\n", addr);
 }
