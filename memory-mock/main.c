@@ -78,9 +78,59 @@ struct bar_config_t {
 #define BAR_TYPE_64B (0x10 << BAR_TYPE_OFFSET)
 #define BAR_MEMORY_SPACE 0x1
 
-/* BAR 0 definitions */
+int read_bar(struct bar_config_t bar, uint64_t addr, void *data, int length, void *private_data)
+{
+	if (addr > bar.size)
+		return 1;
 
-static int8_t bar0_memory[128] = {
+	int max_len = bar.size - addr;
+
+	if (length > max_len)
+		length = max_len;
+
+	memcpy(data, (uint8_t *)bar.data + addr, length);
+	return 0;
+}
+
+void write_bar(struct bar_config_t bar, uint64_t addr, const void *data, int length, void *private_data)
+{
+	if (addr > bar.size)
+		return;
+
+	int max_len = bar.size - addr;
+
+	if (length > max_len)
+		length = max_len;
+
+	memcpy((uint8_t *)bar.data + addr, data, length);
+}
+
+#define DECLARE_BAR_READ_CB(idx) \
+	static int __read_bar_cb_##idx(uint64_t addr, void *data, int length, void *private_data)
+#define DECLARE_BAR_WRITE_CB(idx) \
+	static void __write_bar_cb_##idx(uint64_t addr, const void *data, int length, void *private_data)
+
+#define DEFINE_BAR_READ_CB(idx) \
+	int __read_bar_cb_##idx(uint64_t addr, void *data, int length, void *private_data)\
+	{ \
+		return read_bar(bars_config[(idx)], addr, data, length, private_data); \
+	}
+
+#define DEFINE_BAR_WRITE_CB(idx) \
+	void __write_bar_cb_##idx(uint64_t addr, const void *data, int length, void *private_data)\
+	{ \
+		write_bar(bars_config[(idx)], addr, data, length, private_data); \
+	}
+
+#define REF_BAR_CB(type, idx) __##type##_bar_cb_##idx
+
+/* XXX: We need to define the functions to use them in the definition below. */
+DECLARE_BAR_READ_CB(0);
+DECLARE_BAR_READ_CB(1);
+DECLARE_BAR_WRITE_CB(1);
+
+#define BAR0_SIZE 128
+static int8_t bar0_memory[BAR0_SIZE] = {
 	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
 	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f,
@@ -91,64 +141,22 @@ static int8_t bar0_memory[128] = {
 	0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f,
 };
 
-int read_bar0(uint64_t addr, void *data, int length, void *private_data)
-{
-	if (addr > sizeof(bar0_memory))
-		return 1;
-
-	int max_len = sizeof(bar0_memory) - addr;
-
-	if (length > max_len)
-		length = max_len;
-
-	memcpy(data, bar0_memory + addr, length);
-	return 0;
-}
-
-/* BAR 1 definitions */
-
-static int8_t bar1_memory[128];
-
-int read_bar1(uint64_t addr, void *data, int length, void *private_data)
-{
-	if (addr > sizeof(bar1_memory))
-		return 1;
-
-	int max_len = sizeof(bar1_memory) - addr;
-
-	if (length > max_len)
-		length = max_len;
-
-	memcpy(data, bar1_memory + addr, length);
-	return 0;
-}
-
-void write_bar1(uint64_t addr, const void *data, int length, void *private_data)
-{
-	if (addr > sizeof(bar1_memory))
-		return;
-
-	int max_len = sizeof(bar1_memory) - addr;
-
-	if (length > max_len)
-		length = max_len;
-
-	memcpy(bar1_memory + addr, data, length);
-}
+#define BAR1_SIZE 1024
+static int8_t bar1_memory[BAR1_SIZE] = {};
 
 static struct bar_config_t bars_config[6] = {
 	[0] = {
 		.config = BAR_TYPE_32B | BAR_MEMORY_SPACE,
-		.size = 128,
-		.read_cb = read_bar0,
+		.size = BAR0_SIZE,
+		.read_cb = REF_BAR_CB(read, 0),
 		.write_cb = NULL,
 		.data = bar0_memory,
 	},
 	[1] = {
 		.config = BAR_TYPE_32B | BAR_MEMORY_SPACE,
-		.size = 1024,
-		.read_cb = read_bar1,
-		.write_cb = write_bar1,
+		.size = BAR1_SIZE,
+		.read_cb = REF_BAR_CB(read, 1),
+		.write_cb = REF_BAR_CB(write, 1),
 		.data = bar1_memory,
 	},
 	[2] = { .config = BAR_INACTIVE, },
@@ -156,6 +164,11 @@ static struct bar_config_t bars_config[6] = {
 	[4] = { .config = BAR_INACTIVE, },
 	[5] = { .config = BAR_INACTIVE, },
 };
+
+/* Definitions of the BARs callbacks. */
+DEFINE_BAR_READ_CB(0)
+DEFINE_BAR_READ_CB(1)
+DEFINE_BAR_WRITE_CB(1)
 
 static struct pcie_configuration_space_header configuration_space = {
 	.vendor_id = 0x1,
