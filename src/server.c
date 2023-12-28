@@ -19,6 +19,7 @@
 #include <netdb.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -211,6 +212,10 @@ int warppipe_server_create(struct warppipe_server_t *server)
 			return -1;
 		}
 #endif
+		if (setsockopt(sfd, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(int)) != 0) {
+			perror("Failed to set TCP_NODELAY: ");
+			/* not fatal - continue execution */
+		}
 
 		if ((server->listen ? bind : connect)(sfd, rp->ai_addr, rp->ai_addrlen) != -1) {
 			if (server->listen) {
