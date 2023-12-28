@@ -228,6 +228,8 @@ int main(void)
 	assert(ret == 16);
 	print_read_data(buf, ret);
 
+	assert(strncmp(buf, "hello", 5) == 0);
+
 	LOG_INF("The next read should fail");
 	ret = read_data(client, 2, 0, 16, buf);
 	assert(ret == -1);
