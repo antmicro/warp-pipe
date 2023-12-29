@@ -74,14 +74,14 @@ int8_t memory[] = {
 
 static int move;
 
-int read_cb_imp(uint64_t addr, void *data, int length, void *opaque)
+int read_cb_imp(uint64_t addr, void *data, int length, void *private_data)
 {
 	memcpy(data, memory + move, length);
 	move++;
 	return 0;
 }
 
-void server_client_accept(struct warppipe_client_t *client, void *opaque)
+void server_client_accept(struct warppipe_client_t *client, void *private_data)
 {
 	warppipe_register_bar(client, 0x1000, 4 * 1024, 0, read_cb_imp, NULL);
 }

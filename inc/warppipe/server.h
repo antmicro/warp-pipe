@@ -25,7 +25,7 @@
 #include <warppipe/client.h>
 #include <warppipe/config.h>
 
-typedef void (*warppipe_server_accept_cb_t)(struct warppipe_client_t *client, void *opaque);
+typedef void (*warppipe_server_accept_cb_t)(struct warppipe_client_t *client, void *private_data);
 
 struct warppipe_server_t {
 	/* server's socket fd */
@@ -56,7 +56,7 @@ struct warppipe_server_t {
 	struct warppipe_client_q clients;
 
 	/* optional parameter to server_client_accept_cb function */
-	void *opaque;
+	void *private_data;
 
 	/* called after new client is accepted */
 	warppipe_server_accept_cb_t accept_cb;

@@ -335,7 +335,7 @@ TEST(TestClient, ClientReadTLPCPLFail) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes, 2);
 
 	warppipe_client_create(&client, 10);
-	int rc = warppipe_register_bar(&client, 0x0, 1024, 0, [](uint64_t addr, void *data, int length, void *opaque) { return 0; }, NULL);
+	int rc = warppipe_register_bar(&client, 0x0, 1024, 0, [](uint64_t addr, void *data, int length, void *private_data) { return 0; }, NULL);
 	ASSERT_EQ(rc, 0);
 	warppipe_client_read(&client);
 
@@ -539,7 +539,7 @@ TEST(TestClient, ClientPcieRead) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 4);
 
 	warppipe_client_create(&client, 10);
-	int rc = warppipe_register_bar(&client, 0x1000, 1024, 0, [](uint64_t addr, void *data, int length, void *opaque)
+	int rc = warppipe_register_bar(&client, 0x1000, 1024, 0, [](uint64_t addr, void *data, int length, void *private_data)
 	{
 		uint8_t *result = (uint8_t*)data;
 		memset(data, 0, length);
@@ -662,7 +662,7 @@ TEST(TestClient, ClientPcieSmallRead) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 4);
 
 	warppipe_client_create(&client, 10);
-	int rc_bar = warppipe_register_bar(&client, 0x1000, 1024, 0, [](uint64_t addr, void *data, int length, void *opaque)
+	int rc_bar = warppipe_register_bar(&client, 0x1000, 1024, 0, [](uint64_t addr, void *data, int length, void *private_data)
 	{
 		uint8_t *result = (uint8_t*)data;
 		memset(data, 0, length);
@@ -760,7 +760,7 @@ TEST(TestClient, ClientPcieWrite) {
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes_recv, 2);
 
 	warppipe_client_create(&client, 10);
-	int rc_bar = warppipe_register_bar(&client, 0x1000, 1024, 0, NULL, [](uint64_t addr, const void *data, int length, void *opaque)
+	int rc_bar = warppipe_register_bar(&client, 0x1000, 1024, 0, NULL, [](uint64_t addr, const void *data, int length, void *private_data)
 	{
 		ASSERT_EQ(length, 40);
 		for (int i = 0; i < length; i++) {

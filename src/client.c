@@ -122,7 +122,7 @@ void handle_memory_read_request(struct warppipe_client_t *client, const struct p
 	tlp->tlp_cpl.c_byte_count_hi = data_len_bytes >> 8;
 	tlp->tlp_cpl.c_byte_count_lo = data_len_bytes & 0xFF;
 
-	int read_error = read_cb(addr, tlp->tlp_cpl.c_data, data_len_bytes, client->opaque);
+	int read_error = read_cb(addr, tlp->tlp_cpl.c_data, data_len_bytes, client->private_data);
 
 	if (read_error)
 		tlp->tlp_fmt &= ~PCIE_TLP_FMT_DATA;  // send Cpl instead of CplD to indicate failure
@@ -165,7 +165,7 @@ void handle_memory_write_request(struct warppipe_client_t *client, const struct 
 
 	const void *data = pkt->tlp_fmt & PCIE_TLP_FMT_4DW ? pkt->tlp_req.r_data64 : pkt->tlp_req.r_data32;
 
-	write_cb(addr, data, data_len, client->opaque);
+	write_cb(addr, data, data_len, client->private_data);
 }
 
 void handle_completion(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
@@ -182,7 +182,7 @@ void handle_completion(struct warppipe_client_t *client, const struct pcie_tlp *
 
 	int data_len = pkt->tlp_cpl.c_byte_count_hi << 8 | pkt->tlp_cpl.c_byte_count_lo;
 
-	client->completion_cb[pkt->tlp_cpl.c_tag](completion_status, pkt->tlp_cpl.c_data, data_len, client->opaque);
+	client->completion_cb[pkt->tlp_cpl.c_tag](completion_status, pkt->tlp_cpl.c_data, data_len, client->private_data);
 	client->completion_cb[pkt->tlp_cpl.c_tag] = NULL;
 }
 
