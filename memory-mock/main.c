@@ -30,6 +30,7 @@
 #include <warppipe/client.h>
 #include <warppipe/config.h>
 #include <warppipe/proto.h>
+#include <warppipe/yaml_configspace.h>
 
 #define BAR_INACTIVE 0
 
@@ -243,8 +244,9 @@ int main(int argc, char *argv[])
 {
 	int c;
 	int ret;
+	char *yaml_path = NULL;
 
-	while ((c = getopt(argc, argv, "ca:p:46")) != -1) {
+	while ((c = getopt(argc, argv, "ca:p:46f:")) != -1) {
 		switch (c) {
 		case 'c':
 			server.listen = false;
@@ -259,6 +261,9 @@ int main(int argc, char *argv[])
 		case '6':
 			server.addr_family = (c == '4' ? AF_INET : AF_INET6);
 			break;
+		case 'f':
+			yaml_path = optarg;
+			break;
 		default:  /* '?' */
 			fprintf(stderr,
 				"Usage: %s [-4|-6] [-c] [-a <addr>] [-p <port>]\n"
@@ -268,9 +273,30 @@ int main(int argc, char *argv[])
 				" -c         client mode (default: server mode),\n"
 				" -a <addr>  server address (default: wildcard address for server, loopback address for client),\n"
 				" -p <port>  server port (default: " SERVER_PORT_NUM "),\n"
+				" -f path    path to yaml file with configuration space config (default: none)\n"
 				"\n", *argv);
 			return 1;
 		}
+	}
+
+	if (yaml_path != NULL) {
+		FILE *yaml_file = 0;
+
+		yaml_file = fopen(yaml_path, "r");
+
+		if (yaml_file == NULL) {
+			syslog(LOG_ERR, "Could not load configuration space from file: %s\n", yaml_path);
+			return 1;
+		}
+
+		ret = pcie_configuration_space_header_from_yaml(yaml_file, &configuration_space);
+
+		if (ret != 0) {
+			syslog(LOG_ERR, "Invalid format of configuration space header in file: %s\n", yaml_path);
+			return 1;
+		}
+
+		syslog(LOG_INFO, "Loaded configuration space from file: %s\n", yaml_path);
 	}
 
 	/* syslog initialization */
