@@ -39,7 +39,6 @@ struct warppipe_client_t {
 	int fd;
 	int seqno;
 	bool active;
-	char buf[CLIENT_BUFFER_SIZE];
 	void *private_data;
 	warppipe_read_cb_t bar_read_cb[6];
 	warppipe_write_cb_t bar_write_cb[6];
@@ -50,6 +49,7 @@ struct warppipe_client_t {
 	// 0x1F is maximum allowed tag
 	warppipe_completion_cb_t completion_cb[32];
 	uint8_t read_tag : 5;
+	char buf[CLIENT_BUFFER_SIZE];
 };
 
 /* BSD TAILQ (sys/queue) node struct */
