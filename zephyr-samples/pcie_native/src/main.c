@@ -76,7 +76,18 @@ static int wait_for_completion(struct read_compl_data_t *read_data)
 	return 0;
 }
 
-static int read_config_data(struct warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf)
+/* Read a single field from configuration space header.
+ *
+ * params:
+ *	client: warppipe client
+ *	addr (offset): address of field from configuration space header that will be read
+ *	length: size of the requested field
+ *	buf: buffer for holding read data
+ *
+ * NOTE: The field address (offset) and size must be consistent with the specification (see https://wiki.osdev.org/PCI#Header_Type_0x0).
+ * Only 32 bit values are supported.
+ */
+static int read_config_header_field(struct warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf)
 {
 	int ret;
 	uint64_t aligned_addr = addr & ~0x3;
@@ -151,12 +162,12 @@ static int enumerate(struct warppipe_client_t *client)
 	/* TODO: Disable proper bits in command register. */
 
 	/* Read vendor id. If 0xFFFF, then it is not enabled. */
-	ret = read_config_data(client, 0x0, 2, (uint8_t *)&vendor_id);
+	ret = read_config_header_field(client, 0x0, 2, (uint8_t *)&vendor_id);
 	if (ret < 0 || vendor_id == 0xFFFF)
 		return -1;
 
 	/* Check device type (only 0 is supported). */
-	ret = read_config_data(client, 0xE, 1, &header_type);
+	ret = read_config_header_field(client, 0xE, 1, &header_type);
 	if (ret < 0 || header_type != 0x0)
 		return -1;
 
@@ -166,7 +177,7 @@ static int enumerate(struct warppipe_client_t *client)
 
 	/* Check and register BARs. */
 	for (int bar_offset = 0x10; bar_offset < 0x28; bar_offset += 4) {
-		ret = read_config_data(client, bar_offset, sizeof(uint32_t), (uint8_t *)&old_bar);
+		ret = read_config_header_field(client, bar_offset, sizeof(uint32_t), (uint8_t *)&old_bar);
 		if (ret < 0)
 			continue;
 
@@ -175,7 +186,7 @@ static int enumerate(struct warppipe_client_t *client)
 		if (ret < 0)
 			continue;
 
-		ret = read_config_data(client, bar_offset, sizeof(uint32_t), (uint8_t *)&bar);
+		ret = read_config_header_field(client, bar_offset, sizeof(uint32_t), (uint8_t *)&bar);
 		if (ret < 0 || bar == 0x0)
 			continue;
 
