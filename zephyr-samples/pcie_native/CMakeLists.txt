@@ -18,7 +18,10 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(pcie_native)
 
-FILE(GLOB app_sources src/*.c)
-set(warp_pipe_sources ../../src/client.c ../../src/crc.c ../../src/proto.c ../../src/server.c)
+set(app_sources src/main.c)
+
+# Include Warp Pipe CMakeLists
+include(../../CMakeLists.txt)
+
 target_sources(app PRIVATE ${app_sources} ${warp_pipe_sources})
-target_include_directories(app PRIVATE ../../inc)
+target_include_directories(app PRIVATE ${warp_pipe_include})

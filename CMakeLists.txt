@@ -13,6 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set(warp_pipe_sources
+  ${CMAKE_CURRENT_LIST_DIR}/src/server.c
+  ${CMAKE_CURRENT_LIST_DIR}/src/client.c
+  ${CMAKE_CURRENT_LIST_DIR}/src/crc.c
+  ${CMAKE_CURRENT_LIST_DIR}/src/proto.c
+)
+
+set(warp_pipe_include ${CMAKE_CURRENT_LIST_DIR}/inc)
+
 if (NOT DEFINED ZEPHYR_BASE)
   cmake_minimum_required(VERSION 3.20)
   project(warp-pipe LANGUAGES C CXX)
@@ -26,13 +35,6 @@ if (NOT DEFINED ZEPHYR_BASE)
 
   find_program(LCOV lcov REQUIRED)
 
-  set(warp_pipe_src
-    ${CMAKE_SOURCE_DIR}/src/server.c
-    ${CMAKE_SOURCE_DIR}/src/client.c
-    ${CMAKE_SOURCE_DIR}/src/crc.c
-    ${CMAKE_SOURCE_DIR}/src/proto.c
-  )
-
   set(warp_pipe_cflags
     -Wall
     -Werror
@@ -42,7 +44,7 @@ if (NOT DEFINED ZEPHYR_BASE)
   set(PACKAGE_VERSION ${PACKAGE_SOVERSION}.0.0)
 
   add_library(warppipe SHARED
-    ${warp_pipe_src}
+    ${warp_pipe_sources}
   )
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -58,7 +60,7 @@ if (NOT DEFINED ZEPHYR_BASE)
 
   target_include_directories(warppipe
     PUBLIC
-      ${CMAKE_SOURCE_DIR}/inc
+      ${warp_pipe_include}
   )
 
   target_compile_options(warppipe
