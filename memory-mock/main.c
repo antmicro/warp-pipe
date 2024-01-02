@@ -92,7 +92,7 @@ struct bar_config_t {
 
 #define REF_BAR_CB(type, idx) __##type##_bar_cb_##idx
 
-/* XXX: We need to define the functions to use them in the definition below. */
+/* We need to define the functions to use them in the definition below. */
 DECLARE_BAR_READ_CB(0);
 DECLARE_BAR_READ_CB(1);
 DECLARE_BAR_WRITE_CB(1);
@@ -202,7 +202,7 @@ static struct warppipe_client_t *mock_dev_client;
 	(((addr) - offsetof(struct pcie_configuration_space_header, bar)) / sizeof(uint32_t))
 
 
-static void handle_bar_write(int bar_idx, uint32_t value, int length)
+static void handle_config_bar_write(int bar_idx, uint32_t value, int length)
 {
 	struct bar_config_t bar = bars_config[bar_idx];
 	uint32_t bar_addr = value & ~BAR_MASK_SIZE(bar.size);
@@ -244,7 +244,7 @@ static void config0_write_cb(uint64_t addr, const void *data, int length, void *
 
 
 	if (BAR_ADDR(addr))
-		handle_bar_write(BAR_IDX(addr), le32toh(*input), length);
+		handle_config_bar_write(BAR_IDX(addr), le32toh(*input), length);
 	else
 		syslog(LOG_NOTICE,  "Unhandled config0 write to 0x%lx\n", addr);
 }
