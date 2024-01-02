@@ -152,7 +152,7 @@ static int server_accept(struct warppipe_server_t *server)
 	new_client_node->client = new_client;
 	TAILQ_INSERT_TAIL(&server->clients, new_client_node, next);
 	if (server->accept_cb)
-		server->accept_cb(new_client, server->opaque);
+		server->accept_cb(new_client, server->private_data);
 
 	track_max_fd(server, fd);
 

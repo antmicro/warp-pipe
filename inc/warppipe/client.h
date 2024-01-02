@@ -29,18 +29,17 @@ struct warppipe_completion_status_t {
 	int error_code;
 };
 
-typedef int (*warppipe_read_cb_t)(uint64_t addr, void *data, int length, void *opaque);
-typedef void (*warppipe_write_cb_t)(uint64_t addr, const void *data, int length, void *opaque);
+typedef int (*warppipe_read_cb_t)(uint64_t addr, void *data, int length, void *private_data);
+typedef void (*warppipe_write_cb_t)(uint64_t addr, const void *data, int length, void *private_data);
 
-typedef void (*warppipe_completion_cb_t)(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *opaque);
+typedef void (*warppipe_completion_cb_t)(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *private_data);
 
 /* client struct */
 struct warppipe_client_t {
 	int fd;
 	int seqno;
 	bool active;
-	char buf[CLIENT_BUFFER_SIZE];
-	void *opaque;
+	void *private_data;
 	warppipe_read_cb_t bar_read_cb[6];
 	warppipe_write_cb_t bar_write_cb[6];
 	uint32_t bar[6];
@@ -50,6 +49,7 @@ struct warppipe_client_t {
 	// 0x1F is maximum allowed tag
 	warppipe_completion_cb_t completion_cb[32];
 	uint8_t read_tag : 5;
+	char buf[CLIENT_BUFFER_SIZE];
 };
 
 /* BSD TAILQ (sys/queue) node struct */
