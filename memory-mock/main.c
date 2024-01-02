@@ -156,13 +156,17 @@ static void handle_sigint(int signo)
 
 static int read_bar(struct bar_config_t bar, uint64_t addr, void *data, int length, void *private_data)
 {
-	if (addr > bar.size)
+	if (addr > bar.size) {
+		syslog(LOG_ERR, "Trying to read outside of the BAR memory (addr: 0x%lx, BAR size: 0x%x)", addr, bar.size);
 		return 1;
+	}
 
 	int max_len = bar.size - addr;
 
-	if (length > max_len)
+	if (length > max_len) {
 		length = max_len;
+		syslog(LOG_ERR, "Trying to read part of memory outside of BAR. Read truncated to %d bytes.", length);
+	}
 
 	memcpy(data, (uint8_t *)bar.data + addr, length);
 	return 0;
@@ -170,13 +174,17 @@ static int read_bar(struct bar_config_t bar, uint64_t addr, void *data, int leng
 
 static void write_bar(struct bar_config_t bar, uint64_t addr, const void *data, int length, void *private_data)
 {
-	if (addr > bar.size)
+	if (addr > bar.size) {
+		syslog(LOG_ERR, "Trying to write outside of the BAR memory (addr: 0x%lx, BAR size: 0x%x)", addr, bar.size);
 		return;
+	}
 
 	int max_len = bar.size - addr;
 
-	if (length > max_len)
+	if (length > max_len) {
 		length = max_len;
+		syslog(LOG_ERR, "Trying to write part of memory outside of BAR. Write truncated to %d bytes.", length);
+	}
 
 	memcpy((uint8_t *)bar.data + addr, data, length);
 }
