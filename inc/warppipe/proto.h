@@ -260,6 +260,61 @@ struct warppipe_pcie_transport {
 	};
 };
 
+// Type 0 Configuration Space Header
+struct pcie_configuration_space_header_type0 {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+	uint16_t vendor_id: 16;
+	uint16_t device_id: 16;
+	uint16_t command : 16;
+	uint16_t status : 16;
+	uint8_t revision_id: 8;
+	uint32_t class_code: 24;
+	uint8_t cache_line_size: 8;
+	uint8_t latency_timer: 8;
+	uint8_t header_type: 8;
+	uint8_t bist: 8;
+	uint32_t bar[6];
+	uint32_t cardbus_cis_pointer: 32;
+	uint16_t subsystem_vendor_id: 16;
+	uint16_t subsystem_id: 16;
+	uint32_t expansion_rom_base_address: 32;
+	uint8_t capabilities_pointer: 8;
+	uint32_t _reserved0: 24;
+	uint32_t _reserved1: 32;
+	uint8_t interrupt_line: 8;
+	uint8_t interrupt_pin: 8;
+	uint8_t min_gnt: 8;
+	uint8_t max_lat: 8;
+	uint32_t extended_capabilities[0];
+#elif __BYTE_ORDER == __BIG_ENDIAN
+	uint16_t device_id: 16;
+	uint16_t vendor_id: 16;
+	uint16_t status : 16;
+	uint16_t command : 16;
+	uint32_t class_code: 24;
+	uint8_t revision_id: 8;
+	uint8_t bist: 8;
+	uint8_t header_type: 8;
+	uint8_t latency_timer: 8;
+	uint8_t cache_line_size: 8;
+	uint32_t bar[6];
+	uint32_t cardbus_cis_pointer: 32;
+	uint16_t subsystem_id: 16;
+	uint16_t subsystem_vendor_id: 16;
+	uint32_t expansion_rom_base_address: 32;
+	uint32_t _reserved0: 24;
+	uint8_t capabilities_pointer: 8;
+	uint32_t _reserved1: 32;
+	uint8_t max_lat: 8;
+	uint8_t min_gnt: 8;
+	uint8_t interrupt_pin: 8;
+	uint8_t interrupt_line: 8;
+	uint32_t extended_capabilities[0];
+#else
+# error	"__BYTE_ORDER is neither __LITTLE_ENDIAN nor __BIG_ENDIAN. Please fix <bits/endian.h>"
+#endif
+};
+
 static_assert(sizeof(struct pcie_dllp) == 6);
 static_assert(sizeof(struct pcie_tlp) == 16);
 static_assert(sizeof(struct warppipe_pcie_transport) == 23);
