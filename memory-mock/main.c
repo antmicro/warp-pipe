@@ -54,16 +54,6 @@
 #define BAR_TYPE_64B (0x10 << BAR_TYPE_OFFSET)
 #define BAR_MEMORY_SPACE 0x1
 
-/* XXX: temporary PCIe configuration space structure */
-struct pcie_configuration_space_header {
-	uint16_t	vendor_id;
-	uint16_t	device_id;
-	uint8_t		__unused[10];
-	uint8_t		header_type;
-	uint8_t		__unused_bist;
-	uint32_t	bar[6];
-};
-
 struct bar_config_t {
 	uint8_t config;
 	uint32_t size;
@@ -110,7 +100,7 @@ static int8_t bar0_memory[128] = {
 
 static int8_t bar1_memory[1024] = {};
 
-static struct pcie_configuration_space_header configuration_space = {
+static struct pcie_configuration_space_header_type0 configuration_space = {
 	.vendor_id = 0x1,
 	.device_id = 0x2,
 	.header_type = 0x0,
@@ -196,10 +186,10 @@ DEFINE_BAR_WRITE_CB(1)
 static struct warppipe_client_t *mock_dev_client;
 
 #define BAR_ADDR(addr) \
-	(((addr) >= offsetof(struct pcie_configuration_space_header, bar)) && \
-	((addr) < offsetof(struct pcie_configuration_space_header, bar) + sizeof(uint32_t) * 6))
+	(((addr) >= offsetof(struct pcie_configuration_space_header_type0, bar)) && \
+	((addr) < offsetof(struct pcie_configuration_space_header_type0, bar) + sizeof(uint32_t) * 6))
 #define BAR_IDX(addr) \
-	(((addr) - offsetof(struct pcie_configuration_space_header, bar)) / sizeof(uint32_t))
+	(((addr) - offsetof(struct pcie_configuration_space_header_type0, bar)) / sizeof(uint32_t))
 
 
 static void handle_config_bar_write(int bar_idx, uint32_t value, int length)
