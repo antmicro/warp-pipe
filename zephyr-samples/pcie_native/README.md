@@ -44,16 +44,15 @@ You should see the following output on the standard output console:
 ```
 *** Booting Zephyr OS build f89c5ddd1aaf ***
 [00:00:00.000,000] <inf> pcie_native: Started app
-[00:00:00.000,000] <inf> pcie_native: Started server
+[00:00:00.000,000] <inf> pcie_native: Started client
 [00:00:00.000,000] <inf> pcie_native: Registering bar 0 at 0x100000 (size: 128)
 [00:00:00.000,000] <inf> pcie_native: Registering bar 1 at 0x140000 (size: 1024)
-Read data: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
-Read data: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-[00:00:00.000,000] <inf> pcie_native: Write to bar 2: 0
-Read data: 68 65 6c 6c 6f 00 00 00 00 00 00 00 00 00 00 00
+Read data (len: 16): 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+Read data (len: 16): 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Read data (len: 16): 68 65 6c 6c 6f 00 00 00 00 00 00 00 00 00 00 00
 [00:00:00.000,000] <inf> pcie_native: The next read should fail
 [00:00:00.000,000] <err> pcie_native: Failed to read bar 2 at addr 0-0
-[00:00:00.000,000] <err> pcie_native: Read error: -1
+[00:00:00.000,000] <inf> pcie_native: All checks has succeded.
 ```
 
 After that, you can terminate all background processes (the sleep is needed if you use this snippet inside a script, to wait some time for output):
