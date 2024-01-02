@@ -28,7 +28,7 @@ Use the following command to build this sample:
 west build -p -d build.pcie_native -b native_sim zephyr-samples/pcie_native
 ```
 
-This sample requires `memory-mock` that acts as a end PCIe device.
+This sample requires `memory-mock` that acts as a PCIe memory device.
 Please refer to [building memory-mock](../../README.md#building-memory-mock) for more information.
 
 Now you can launch both `memory-mock` and this sample:
@@ -56,7 +56,7 @@ Read data: 68 65 6c 6c 6f 00 00 00 00 00 00 00 00 00 00 00
 [00:00:00.000,000] <err> pcie_native: Read error: -1
 ```
 
-After that, you can terminate all background processes:
+After that, you can terminate all background processes (the sleep is needed if you use this snippet inside a script, to wait some time for output):
 <!-- name="pcie-native-teardown" -->
 ```
 sleep 10

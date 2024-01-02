@@ -56,7 +56,7 @@ static void read_compl(const struct warppipe_completion_status_t completion_stat
 	}
 
 	if (length > read_data->buf_size) {
-		LOG_WRN("Read %d bytes, expected at most %d", length, read_data->buf_size);
+		LOG_WRN("Read %d bytes, expected at most %d (%d bytes will be lost)", length, read_data->buf_size, length - read_data->buf_size);
 		length = read_data->buf_size;
 	}
 
@@ -150,7 +150,7 @@ static int enumerate(struct warppipe_client_t *client)
 
 	/* TODO: Disable proper bits in command register. */
 
-	/* Read vendor id. If 0xFFFF, then not enabled. */
+	/* Read vendor id. If 0xFFFF, then it is not enabled. */
 	ret = read_config_data(client, 0x0, 2, (uint8_t *)&vendor_id);
 	if (ret < 0 || vendor_id == 0xFFFF)
 		return -1;
