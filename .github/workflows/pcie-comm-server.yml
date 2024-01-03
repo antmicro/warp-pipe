@@ -84,3 +84,29 @@ jobs:
         with:
           path: |
               ./pcie_*.tar.gz
+
+  Twister-tests:
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26.2
+    env:
+      CMAKE_PREFIX_PATH: /opt/toolchains
+      PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 1
+      - run: |
+          apt update -qq
+          apt upgrade -y -qq
+          apt install -y -qq libgtest-dev pkg-config
+      - run: |
+          pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
+          tuttest README.md warp-pipe-build,warp-pipe-install,memory-mock-build | bash -oe pipefail -
+          tuttest README.md zephyr-env-prep | bash -oe pipefail -
+      - run: tuttest README.md run-twister-tests | bash -oex pipefail -
+      - uses: actions/upload-artifact@v3
+        with:
+          path: |
+              twister-out

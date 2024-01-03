@@ -135,15 +135,6 @@ static struct warppipe_server_t server = {
 	.quit = false,
 };
 
-static void handle_sigint(int signo)
-{
-	server.quit = true;
-	syslog(LOG_NOTICE, "Received SIGINT. " PRJ_NAME_LONG " will shut down.");
-
-	/* disconnect every user */
-	warppipe_server_disconnect_clients(&server, NULL);
-}
-
 static int read_bar(struct bar_config_t bar, uint64_t addr, void *data, int length, void *private_data)
 {
 	if (addr > bar.size) {
@@ -286,9 +277,6 @@ int main(int argc, char *argv[])
 	setlogmask(LOG_UPTO(LOG_DEBUG));
 	openlog(PRJ_NAME_SHORT, LOG_CONS | LOG_NDELAY, LOG_USER);
 
-	/* signal initialization */
-	signal(SIGINT, handle_sigint);
-
 	/* server initialization */
 	syslog(LOG_NOTICE, "Starting " PRJ_NAME_LONG "...");
 
@@ -302,8 +290,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ret = warppipe_server_create(&server);
 	warppipe_server_register_accept_cb(&server, server_client_accept);
+
+	ret = warppipe_server_create(&server);
 	if (!ret)
 		while (!server.quit)
 			warppipe_server_loop(&server);

@@ -1,0 +1,6 @@
+west-commands:
+  - file: zephyr-samples/west_commands/twister_cmd.py
+    commands:
+      - name: twister
+        class: Twister
+        help: west twister wrapper
