@@ -210,7 +210,7 @@ static const char *dma_emul_block_config_to_string(const struct dma_block_config
 	return buffer;
 }
 
-static uint8_t result;
+static uint8_t result[4];
 static bool got_result = false;
 
 static void pcie_completion_cb(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
@@ -221,11 +221,11 @@ static void pcie_completion_cb(const struct warppipe_completion_status_t complet
 		printk("completion_status.error_code: %d\n", completion_status.error_code);
 	}
 
-	if (length != 1) {
+	if (length != 4) {
 		printk("Unexpected length of completion: %d\n", length);
 	}
 
-	result = response[0];
+	memcpy(&result, response, 4);
 	got_result = true;
 }
 

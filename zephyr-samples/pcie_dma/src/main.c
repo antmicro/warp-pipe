@@ -48,8 +48,8 @@ void configure_dma(const struct device *const dma_device, int32_t channel)
 	};
 	struct dma_config conf = {
 		.dma_slot = 0,
-		.source_burst_length = 1,
-		.dest_burst_length = 1,
+		.source_burst_length = 4,
+		.dest_burst_length = 4,
 		.block_count = 1,
 		.head_block = &block,
 		.dma_callback = finished_cb	// Callback to finished transfer
