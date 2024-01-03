@@ -22,6 +22,8 @@
 
 #include <sys/socket.h>
 
+#include "../../common/common.h"
+
 #define DT_DRV_COMPAT zephyr_dma_emul
 
 #ifdef CONFIG_DMA_64BIT
@@ -208,7 +210,7 @@ static const char *dma_emul_block_config_to_string(const struct dma_block_config
 	return buffer;
 }
 
-static uint8_t result;
+static uint8_t result[4];
 static bool got_result = false;
 
 static void pcie_completion_cb(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
@@ -219,11 +221,11 @@ static void pcie_completion_cb(const struct warppipe_completion_status_t complet
 		printk("completion_status.error_code: %d\n", completion_status.error_code);
 	}
 
-	if (length != 1) {
+	if (length != 4) {
 		printk("Unexpected length of completion: %d\n", length);
 	}
 
-	result = response[0];
+	memcpy(&result, response, 4);
 	got_result = true;
 }
 
@@ -444,6 +446,56 @@ static int dma_emul_reload(const struct device *dev, uint32_t channel, dma_addr_
 	return -ENOSYS;
 }
 
+static int enumerate(struct warppipe_server_t *server, struct warppipe_client_t *client)
+{
+	int ret;
+	uint16_t vendor_id;
+	uint8_t header_type;
+
+	/* TODO: Disable proper bits in command register. */
+
+	/* Read vendor id. If 0xFFFF, then it is not enabled. */
+	ret = read_config_header_field(server, client, 0x0, 2, (uint8_t *)&vendor_id);
+	if (ret < 0 || vendor_id == 0xFFFF)
+		return -1;
+
+	/* Check device type (only 0 is supported). */
+	ret = read_config_header_field(server, client, 0xE, 1, &header_type);
+	if (ret < 0 || header_type != 0x0)
+		return -1;
+
+	int bar_idx = 0;
+	int bar_offset = 0x10;
+	uint32_t bar = 0xFFFFFFFF;
+	uint32_t bar_addr = 0x1000;
+	uint32_t old_bar;
+
+	ret = read_config_header_field(server, client, bar_offset, sizeof(uint32_t), (uint8_t *)&old_bar);
+	if (ret < 0)
+		return -1;
+
+	ret = warppipe_config0_write(client, bar_offset, &bar, sizeof(uint32_t));
+	if (ret < 0)
+		return -1;
+
+	ret = read_config_header_field(server, client, bar_offset, sizeof(uint32_t), (uint8_t *)&bar);
+	if (ret < 0 || bar == 0x0)
+		return -1;
+
+	uint32_t size = -(bar & ~0xF);
+
+	LOG_INF("Registering bar %d at 0x%x (size: %d)", bar_idx, bar_addr, size);
+
+	ret = warppipe_register_bar(client, bar_addr, size, bar_idx, NULL, NULL);
+	if (ret < 0)
+		return -1;
+
+	ret = warppipe_config0_write(client, bar_offset, &bar_addr, sizeof(uint32_t));
+	if (ret < 0)
+		return -1;
+	return 0;
+}
+
 static int dma_emul_start(const struct device *dev, uint32_t channel)
 {
 	int ret = 0;
@@ -464,7 +516,7 @@ static int dma_emul_start(const struct device *dev, uint32_t channel)
 		return -1;
 	}
 	/* register remote bar */
-	warppipe_register_bar(TAILQ_FIRST(&pcie_server.clients)->client, 0x1000, 4 * 1024, 0, NULL, NULL);
+	enumerate(&pcie_server, TAILQ_FIRST(&pcie_server.clients)->client);
 
 	key = k_spin_lock(&data->lock);
 	xfer = &config->xfer[channel];

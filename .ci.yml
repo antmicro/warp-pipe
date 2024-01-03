@@ -76,6 +76,10 @@ Build Zephyr Samples:
     - tuttest zephyr-samples/pcie_dma/README.md pcie-dma-build,pcie-dma-run,pcie-dma-teardown | bash -oe pipefail -
     - tar czf pcie_dma.tar.gz build.pcie_dma
 
+    # Run warp-pipe native sample
+    - tuttest zephyr-samples/pcie_native/README.md pcie-native-build,pcie-native-run,pcie-native-teardown | bash -oe pipefail -
+    - tar czf pcie_native.tar.gz build.pcie_native
+
     # Run warp-pipe sample
     - tuttest zephyr-samples/pcie_pipe/README.md pcie-qemu-build,pcie-pipe-build,pcie-pipe-run,pcie-pipe-teardown | bash -oe pipefail -
     - tar czf pcie_pipe.tar.gz build.pcie_pipe_*
