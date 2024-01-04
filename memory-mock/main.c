@@ -192,7 +192,7 @@ static void handle_config_bar_write(int bar_idx, uint32_t value, int length)
 
 	/* Register bar in warppipe when first write with actual address is made. */
 	if (value != 0xffffffff && mock_dev_client->bar[bar_idx] == 0) {
-		syslog(LOG_NOTICE, "Registering bar %d at address %x\n", bar_idx, configuration_space.bar[bar_idx]);
+		syslog(LOG_NOTICE, "Registering bar %d at address %x\n", bar_idx, bar_addr);
 		warppipe_register_bar(mock_dev_client, bar_addr, bar.size, bar_idx, bar.read_cb, bar.write_cb);
 	}
 }
