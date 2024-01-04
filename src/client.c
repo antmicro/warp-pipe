@@ -122,6 +122,13 @@ void handle_memory_read_request(struct warppipe_client_t *client, const struct p
 	tlp->tlp_cpl.c_byte_count_hi = data_len_bytes >> 8;
 	tlp->tlp_cpl.c_byte_count_lo = data_len_bytes & 0xFF;
 
+	if ((pkt->tlp_req.r_first_be & 7) == 0)
+		addr += 3;
+	else if ((pkt->tlp_req.r_first_be & 3) == 0)
+		addr += 2;
+	else if ((pkt->tlp_req.r_first_be & 1) == 0)
+		addr += 1;
+
 	int read_error = read_cb(addr, tlp->tlp_cpl.c_data, data_len_bytes, client->private_data);
 
 	if (read_error)
@@ -164,6 +171,18 @@ void handle_memory_write_request(struct warppipe_client_t *client, const struct 
 	}
 
 	const void *data = pkt->tlp_fmt & PCIE_TLP_FMT_4DW ? pkt->tlp_req.r_data64 : pkt->tlp_req.r_data32;
+
+	if ((pkt->tlp_req.r_first_be & 7) == 0) {
+		addr += 3;
+		data += 3;
+	} else if ((pkt->tlp_req.r_first_be & 3) == 0) {
+		addr += 2;
+		data += 2;
+	} else if ((pkt->tlp_req.r_first_be & 1) == 0) {
+		addr += 1;
+		data += 1;
+	}
+
 
 	write_cb(addr, data, data_len, client->private_data);
 }

@@ -27,14 +27,7 @@ extern "C" {
 #endif
 #include <sys/socket.h>
 #include <unistd.h>
-
-static struct warppipe_server_t pcie_server = {
-	.listen = false,
-	.quit = false,
-	.addr_family = AF_UNSPEC,
-	.host = "127.0.0.1",
-	.port = SERVER_PORT_NUM,
-};
+#include <stdlib.h>
 
 struct read_compl_data_t {
 	uint8_t *buf;
@@ -42,6 +35,23 @@ struct read_compl_data_t {
 	int ret;
 	bool finished;
 };
+
+static void read_compl(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *private_data)
+{
+	struct read_compl_data_t *read_data = (struct read_compl_data_t *)private_data;
+
+	if (completion_status.error_code) {
+		read_data->ret = completion_status.error_code;
+		return;
+	}
+
+	zassert_equal(length, read_data->buf_size, "Unexpected size of completion data: got: %d, expected: %d", length, read_data->buf_size);
+
+	read_data->ret = length;
+	memcpy(read_data->buf, data, length);
+
+	read_data->finished = true;
+}
 
 static int wait_for_completion(struct warppipe_server_t *server, struct read_compl_data_t *read_data)
 {
@@ -54,35 +64,13 @@ static int wait_for_completion(struct warppipe_server_t *server, struct read_com
 	return 0;
 }
 
-static void read_compl(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *private_data)
-{
-	struct read_compl_data_t *read_data = (struct read_compl_data_t *)private_data;
-
-	read_data->finished = true;
-
-	if (completion_status.error_code) {
-		read_data->ret = completion_status.error_code;
-		return;
-	}
-
-	if (length > read_data->buf_size) {
-		length = read_data->buf_size;
-	}
-
-	read_data->ret = length;
-	memcpy(read_data->buf, data, length);
-}
-
 static int read_config_header_field(struct warppipe_server_t *server, struct warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf)
 {
-	int ret;
 	uint64_t aligned_addr = addr & ~0x3;
 	uint64_t offset = addr & 0x3;
 	uint32_t aligned_buf;
 
-	if (length + offset > 4) {
-		return -1;
-	}
+	zassert_true(length + offset <= 4, "Invalid config read");
 
 	struct read_compl_data_t read_data = {
 		.buf = (uint8_t *)&aligned_buf,
@@ -92,98 +80,174 @@ static int read_config_header_field(struct warppipe_server_t *server, struct war
 	};
 
 	client->private_data = (void *)&read_data;
-	ret = warppipe_config0_read(client, aligned_addr, 4, &read_compl);
-	if (ret < 0) {
-		return ret;
-	}
+	zassert_equal(warppipe_config0_read(client, aligned_addr, 4, &read_compl), 0, "Unexpected config data read");
 
-	ret = wait_for_completion(server, &read_data);
-	if (ret < 0)
-		return ret;
+	zassert_equal(wait_for_completion(server, &read_data), 0, "Failed to wait for response");
+	zassert_equal(read_data.ret, 4, "Invalid read length");
 
 	memcpy(buf, (uint8_t *)&aligned_buf + offset, length);
-	return read_data.ret;
+	return length;
 }
 
 static int enumerate(struct warppipe_server_t *server, struct warppipe_client_t *client)
 {
-	int ret;
 	uint16_t vendor_id;
 	uint8_t header_type;
 
-	/* TODO: Disable proper bits in command register. */
-
 	/* Read vendor id. If 0xFFFF, then it is not enabled. */
-	ret = read_config_header_field(server, client, 0x0, 2, (uint8_t *)&vendor_id);
-	if (ret < 0 || vendor_id == 0xFFFF)
-		return -1;
+	zassert_equal(read_config_header_field(server, client, 0x0, 2, (uint8_t *)&vendor_id), 2, "Incomplete config read");
+	zassert_equal(vendor_id, 0x1, "Invalid vendor_id read");
 
-	/* Check device type (only 0 is supported). */
-	ret = read_config_header_field(server, client, 0xE, 1, &header_type);
-	if (ret < 0 || header_type != 0x0)
-		return -1;
+	zassert_equal(read_config_header_field(server, client, 0xE, 1, &header_type), 1, "Incomplete config read");
+	zassert_equal(header_type, 0x0, "Invalid header_type");
 
-	int bar_idx = 0;
-	int bar_offset = 0x10;
-	uint32_t bar = 0xFFFFFFFF;
-	uint32_t bar_addr = 0x1000;
-	uint32_t old_bar;
+	uint32_t bar, old_bar;
 
-	ret = read_config_header_field(server, client, bar_offset, sizeof(uint32_t), (uint8_t *)&old_bar);
-	if (ret < 0)
-		return -1;
+	/* Check and register BARs. */
+	for (int bar_offset = 0x10; bar_offset < 0x28; bar_offset += 4) {
+		zassert_equal(read_config_header_field(server, client, bar_offset, sizeof(uint32_t), (uint8_t *)&old_bar), sizeof(uint32_t), "Failed to read config");
 
-	ret = warppipe_config0_write(client, bar_offset, &bar, sizeof(uint32_t));
-	if (ret < 0)
-		return -1;
+		bar = 0xFFFFFFFF;
+		zassert_equal(warppipe_config0_write(client, bar_offset, &bar, sizeof(uint32_t)), 0, "Failed to write config");
 
-	ret = read_config_header_field(server, client, bar_offset, sizeof(uint32_t), (uint8_t *)&bar);
-	if (ret < 0 || bar == 0x0)
-		return -1;
+		zassert_equal(read_config_header_field(server, client, bar_offset, sizeof(uint32_t), (uint8_t *)&bar), sizeof(uint32_t), "Failed to get BAR");
+		// if bar is equal to zero, it doesn't exist
+		if (bar == 0x0)
+			continue;
 
-	uint32_t size = -(bar & ~0xF);
+		uint32_t size = -(bar & ~0xF);
+		uint32_t bar_idx = (bar_offset - 0x10) / sizeof(uint32_t);
+		uint32_t bar_addr = bar_offset * 0x10000;
 
-	ret = warppipe_register_bar(client, bar_addr, size, bar_idx, NULL, NULL);
-	if (ret < 0)
-		return -1;
+		zassert_equal(warppipe_register_bar(client, bar_addr, size, bar_idx, NULL, NULL), 0, "Failed to register BAR");
 
-	ret = warppipe_config0_write(client, bar_offset, &bar_addr, sizeof(uint32_t));
-	if (ret < 0)
-		return -1;
+		zassert_equal(warppipe_config0_write(client, bar_offset, &bar_addr, sizeof(uint32_t)), 0, "Failed to write BAR");
+	}
+
 	return 0;
 }
 
-ZTEST_SUITE(tests, NULL, NULL, NULL, NULL, NULL);
-
-static bool completion_rec;
-
-ZTEST(tests, test_read1)
+static void *fixture_setup(void)
 {
-	zassert_equal(warppipe_server_create(&pcie_server), 0, "Failed to connect to server");
-	auto client = TAILQ_FIRST(&pcie_server.clients)->client;
-	enumerate(&pcie_server, client);
-	warppipe_read(client, 0, 0x0, 1, [](const struct warppipe_completion_status_t completion_status, const void *data, int length, void *opaque)
-	{
-		zassert_equal(completion_status.error_code, 0, "Completion failed");
-		zassert_equal(length, 1, "length != 1 (%d)", length);
-		const uint8_t *result = (const uint8_t *)data;
-		zassert_equal(result[0], 0x10, "result[0] != 0x10");
-		completion_rec = true;
-	});
+	warppipe_server_t *fixture = (warppipe_server_t *)malloc(sizeof(warppipe_server_t));
+	zassume_not_null(fixture, NULL);
+	fixture->listen = false;
+	fixture->quit = false;
+	fixture->addr_family = AF_UNSPEC;
+	fixture->host = "127.0.0.1";
+	fixture->port = SERVER_PORT_NUM;
 
-	while(!completion_rec)
-		warppipe_server_loop(&pcie_server);
-	completion_rec = false;
+	return fixture;
+}
 
-	warppipe_read(client, 0, 0x0, 4, [](const struct warppipe_completion_status_t completion_status, const void *data, int length, void *opaque)
-	{
-		zassert_equal(completion_status.error_code, 0, "Completion failed");
-		zassert_equal(length, 4, "length != 4 (%d)", length);
-		const uint32_t *result = (const uint32_t *)data;
-		zassert_equal(result[0], 0x13121110, "result[0] != 0x13121110 (%x)", result[0]);
-		completion_rec = true;
-	});
-	while(!completion_rec)
-		warppipe_server_loop(&pcie_server);
-	completion_rec = false;
+static void fixture_before(void *fixture)
+{
+	warppipe_server_t *pcie_server = (warppipe_server_t *)fixture;
+	pcie_server->quit = false;
+
+	zassert_equal(warppipe_server_create(pcie_server), 0, "Failed to connect to server");
+
+	auto client = TAILQ_FIRST(&pcie_server->clients)->client;
+	zassert_equal(enumerate(pcie_server, client), 0, "Failed to enumerate pcie device");
+}
+
+static void fixture_after(void *fixture)
+{
+	warppipe_server_t *pcie_server = (warppipe_server_t *)fixture;
+	pcie_server->quit = true;
+	warppipe_server_loop(pcie_server);
+}
+
+static void fixture_teardown(void *fixture)
+{
+	warppipe_server_t *pcie_server = (warppipe_server_t *)fixture;
+	pcie_server->quit = true;
+	warppipe_server_loop(pcie_server);
+	free(pcie_server);
+}
+
+ZTEST_SUITE(tests, NULL, fixture_setup, fixture_before, fixture_after, fixture_teardown);
+
+static int read_data(warppipe_server_t *pcie_server, struct warppipe_client_t *client, int bar, uint64_t addr, int length, struct read_compl_data_t *read_data)
+{
+	int ret;
+
+	client->private_data = (void *)read_data;
+	ret = warppipe_read(client, bar, addr, length, &read_compl);
+	if (ret < 0) {
+		return ret;
+	}
+
+	wait_for_completion(pcie_server, read_data);
+
+	return read_data->ret;
+}
+
+
+ZTEST_F(tests, test_write)
+{
+	warppipe_server_t *pcie_server = (warppipe_server_t *)fixture;
+	auto client = TAILQ_FIRST(&pcie_server->clients)->client;
+	uint8_t buf[16];
+
+	memcpy(buf, "hello", 5);
+	zassert_equal(warppipe_write(client, 1, 0, buf, strlen("hello")), 0, "Failed to write data to PCIe BAR");
+}
+
+ZTEST_F(tests, test_read)
+{
+	warppipe_server_t *pcie_server = (warppipe_server_t *)fixture;
+	auto client = TAILQ_FIRST(&pcie_server->clients)->client;
+
+	uint8_t read_buf[16];
+	struct read_compl_data_t read = {
+		.buf = read_buf,
+		.buf_size = 16,
+		.ret = -1,
+		.finished = false
+	};
+	zassert_equal(read_data(pcie_server, client, 0, 0, 16, &read), 16, "Failed to read data to PCIe BAR");
+	for (int i = 0; i < 16; i++) {
+		zassert_equal(read_buf[i], 0x10 + i, "Unexpected data read");
+	}
+}
+
+ZTEST_F(tests, test_unaligned_read)
+{
+	warppipe_server_t *pcie_server = (warppipe_server_t *)fixture;
+	auto client = TAILQ_FIRST(&pcie_server->clients)->client;
+
+	uint8_t read_buf[1];
+	struct read_compl_data_t read = {
+		.buf = read_buf,
+		.buf_size = 1,
+		.ret = -1,
+		.finished = false
+	};
+	zassert_equal(read_data(pcie_server, client, 0, 1, 1, &read), 1, "Failed to read data to PCIe BAR");
+	zassert_equal(read_buf[0], 0x11, "Unexpected data read: got: %x, expected: %x", read_buf[0], 0x11);
+}
+
+ZTEST_F(tests, test_unaligned_write)
+{
+	warppipe_server_t *pcie_server = (warppipe_server_t *)fixture;
+	auto client = TAILQ_FIRST(&pcie_server->clients)->client;
+	uint8_t buf[5];
+
+	memcpy(buf, "hello", 5);
+	zassert_equal(warppipe_write(client, 1, 1, buf, 5), 0, "Failed to write data to PCIe BAR");
+
+	uint8_t read_buf[5];
+	struct read_compl_data_t read = {
+		.buf = read_buf,
+		.buf_size = 5,
+		.ret = -1,
+		.finished = false
+	};
+	zassert_equal(read_data(pcie_server, client, 1, 1, 5, &read), 5, "Failed to read data to PCIe BAR");
+	zassert_equal(read_buf[0], 'h', "Unexpected data read: got: %c, expected: %s", read_buf[0], "h");
+	zassert_equal(read_buf[1], 'e', "Unexpected data read: got: %c, expected: %s", read_buf[1], "e");
+	zassert_equal(read_buf[2], 'l', "Unexpected data read: got: %c, expected: %s", read_buf[2], "l");
+	zassert_equal(read_buf[3], 'l', "Unexpected data read: got: %c, expected: %s", read_buf[3], "l");
+	zassert_equal(read_buf[4], 'o', "Unexpected data read: got: %c, expected: %s", read_buf[4], "o");
 }
