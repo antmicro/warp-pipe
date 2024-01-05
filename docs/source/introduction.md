@@ -25,3 +25,4 @@ The repository is organized as follows:
 - `tests` - unit tests for warp-pipe
 - `zephyr` - Zephyr RTOS configuration to enable using warp-pipe as a Zephyr module
 - `zephyr-samples` - a range of Zephyr RTOS tests, targeting either the `native_sim` target or a target to be run in a simulator
+- `zephyr-tests` - a directory with tests runnable via Zephyr Twister
