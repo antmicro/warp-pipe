@@ -13,7 +13,7 @@ jobs:
       - run: |
           sudo apt-get update -qq
           sudo apt-get upgrade -y -qq
-          sudo apt-get install -y -qq cmake git lcov libgtest-dev
+          sudo apt-get install -y -qq cmake git lcov libgtest-dev libyaml-0-2 libyaml-dev
       - run: pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
       - run: |
           tuttest README.md warp-pipe-build | bash -oe pipefail -
@@ -56,7 +56,7 @@ jobs:
       - run: |
           apt update -qq
           apt upgrade -y -qq
-          apt install -y -qq libgtest-dev pkg-config
+          apt install -y -qq libgtest-dev pkg-config libyaml-0-2 libyaml-dev
       - run: |
           pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
           tuttest README.md warp-pipe-build,warp-pipe-install,memory-mock-build | bash -oe pipefail -
@@ -100,7 +100,7 @@ jobs:
       - run: |
           apt update -qq
           apt upgrade -y -qq
-          apt install -y -qq libgtest-dev pkg-config
+          apt install -y -qq libgtest-dev pkg-config libyaml-0-2 libyaml-dev
       - run: |
           pip3 install -e git+https://github.com/antmicro/tuttest#egg=tuttest
           tuttest README.md warp-pipe-build,warp-pipe-install,memory-mock-build | bash -oe pipefail -
