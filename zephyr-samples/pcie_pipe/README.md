@@ -1,6 +1,6 @@
 # PCIe PIPE
 
-This samples demonstrates the functionality of the ``pcie-pipe`` device from QEMU using warp-pipe.
+This samples demonstrates the functionality of the ``warp-pipe`` device from QEMU using warp-pipe.
 
 ## Preparing the environment
 
