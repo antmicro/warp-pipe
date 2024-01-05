@@ -32,10 +32,10 @@ west build -d build.pcie_pipe_client/ -b qemu_x86_64 zephyr-samples/pcie_pipe/ -
 Now you can launch both executables:
 <!-- name="pcie-pipe-run" -->
 ```
-west build -t run -d build.pcie_pipe_server/ &
+west build -t run -d build.pcie_pipe_server/ < /dev/null &
 SERVER_PID=$!
 sleep 2 # wait for server to start
-west build -t run -d build.pcie_pipe_client/ &
+west build -t run -d build.pcie_pipe_client/ < /dev/null &
 CLIENT_PID=$!
 ```
 
