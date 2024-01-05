@@ -29,3 +29,7 @@ make -j$(nproc)
 export QEMU_BIN_PATH=`pwd`
 cd -
 ```
+
+```{note}
+Remember that the `QEMU_BIN_PATH` variable is used by the Zephyr build system - it needs to be set before building Zephyr samples.
+```
