@@ -18,6 +18,7 @@ set(warp_pipe_sources
   ${CMAKE_CURRENT_LIST_DIR}/src/client.c
   ${CMAKE_CURRENT_LIST_DIR}/src/crc.c
   ${CMAKE_CURRENT_LIST_DIR}/src/proto.c
+  ${CMAKE_CURRENT_LIST_DIR}/src/yaml_configspace.c
 )
 
 set(warp_pipe_include ${CMAKE_CURRENT_LIST_DIR}/inc)
@@ -32,6 +33,8 @@ if (NOT DEFINED ZEPHYR_BASE)
   endif()
   option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile-commands.json" ON)
   option(ENABLE_TESTS "Build tests" ON)
+
+  find_library(LIB_YAML yaml REQUIRED)
 
   set(warp_pipe_cflags
     -Wall
@@ -52,6 +55,8 @@ if (NOT DEFINED ZEPHYR_BASE)
     PRIVATE
       ${warp_pipe_cflags}
   )
+
+  target_link_libraries(warppipe PUBLIC ${LIB_YAML})
 
   set_target_properties(warppipe PROPERTIES
     VERSION ${PACKAGE_VERSION}

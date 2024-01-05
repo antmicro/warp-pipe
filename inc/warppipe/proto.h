@@ -260,64 +260,54 @@ struct warppipe_pcie_transport {
 	};
 };
 
-// Type 0 Configuration Space Header
-struct pcie_configuration_space_header_type0 {
+struct pcie_extended_capability {
+	uint8_t next_capability_offset_hi : 8;
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-	uint16_t vendor_id: 16;
-	uint16_t device_id: 16;
-	uint16_t command : 16;
-	uint16_t status : 16;
-	uint8_t revision_id: 8;
-	uint32_t class_code: 24;
-	uint8_t cache_line_size: 8;
-	uint8_t latency_timer: 8;
-	uint8_t header_type: 8;
-	uint8_t bist: 8;
-	uint32_t bar[6];
-	uint32_t cardbus_cis_pointer: 32;
-	uint16_t subsystem_vendor_id: 16;
-	uint16_t subsystem_id: 16;
-	uint32_t expansion_rom_base_address: 32;
-	uint8_t capabilities_pointer: 8;
-	uint32_t _reserved0: 24;
-	uint32_t _reserved1: 32;
-	uint8_t interrupt_line: 8;
-	uint8_t interrupt_pin: 8;
-	uint8_t min_gnt: 8;
-	uint8_t max_lat: 8;
-	uint32_t extended_capabilities[0];
+	uint8_t capability_version : 4;
+	uint8_t next_capability_offset_lo : 4;
 #elif __BYTE_ORDER == __BIG_ENDIAN
-	uint16_t device_id: 16;
-	uint16_t vendor_id: 16;
-	uint16_t status : 16;
-	uint16_t command : 16;
-	uint32_t class_code: 24;
-	uint8_t revision_id: 8;
-	uint8_t bist: 8;
-	uint8_t header_type: 8;
-	uint8_t latency_timer: 8;
-	uint8_t cache_line_size: 8;
-	uint32_t bar[6];
-	uint32_t cardbus_cis_pointer: 32;
-	uint16_t subsystem_id: 16;
-	uint16_t subsystem_vendor_id: 16;
-	uint32_t expansion_rom_base_address: 32;
-	uint32_t _reserved0: 24;
-	uint8_t capabilities_pointer: 8;
-	uint32_t _reserved1: 32;
-	uint8_t max_lat: 8;
-	uint8_t min_gnt: 8;
-	uint8_t interrupt_pin: 8;
-	uint8_t interrupt_line: 8;
-	uint32_t extended_capabilities[0];
+	uint8_t next_capability_offset_lo : 4;
+	uint8_t capability_version : 4;
 #else
 # error	"__BYTE_ORDER is neither __LITTLE_ENDIAN nor __BIG_ENDIAN. Please fix <bits/endian.h>"
 #endif
+	uint8_t capability_id_hi : 8;
+	uint8_t capability_id_lo : 8;
+	uint32_t data[];
+};
+
+// Type 0 Configuration Space Header
+struct pcie_configuration_space_header_type0 {
+	uint8_t vendor_id[2];
+	uint8_t device_id[2];
+	uint8_t command[2];
+	uint8_t status[2];
+	uint8_t revision_id: 8;
+	uint8_t class_code[3];
+	uint8_t cache_line_size: 8;
+	uint8_t latency_timer: 8;
+	uint8_t header_type: 8;
+	uint8_t bist: 8;
+	uint32_t bar[6];
+	uint32_t cardbus_cis_pointer;
+	uint8_t subsystem_vendor_id[2];
+	uint8_t subsystem_id[2];
+	uint32_t expansion_rom_base_address;
+	uint8_t capabilities_pointer: 8;
+	uint8_t _reserved0;
+	uint8_t _reserved1[2];
+	uint8_t _reserved2[4];
+	uint8_t interrupt_line: 8;
+	uint8_t interrupt_pin: 8;
+	uint8_t min_gnt: 8;
+	uint8_t max_lat: 8;
+	struct pcie_extended_capability extended_capabilities[];
 };
 
 static_assert(sizeof(struct pcie_dllp) == 6);
 static_assert(sizeof(struct pcie_tlp) == 16);
 static_assert(sizeof(struct warppipe_pcie_transport) == 23);
+static_assert(sizeof(struct pcie_configuration_space_header_type0) == 64);
 
 int tlp_data_length(const struct pcie_tlp *pkt);
 int tlp_data_length_bytes(const struct pcie_tlp *pkt);

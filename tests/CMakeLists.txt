@@ -19,6 +19,7 @@ set(warp_pipe_test_src
   ${CMAKE_SOURCE_DIR}/tests/test_client.cc
   ${CMAKE_SOURCE_DIR}/tests/test_crc.cc
   ${CMAKE_SOURCE_DIR}/tests/test_server.cc
+  ${CMAKE_SOURCE_DIR}/tests/test_configspace.cc
 )
 
 set(warp_pipe_test_cflags
@@ -38,6 +39,8 @@ add_executable(warppipe-tests
 # This allows to enable coverage, but don't require gcov on runtime
 get_target_property(warppipe_SOURCES warppipe SOURCES)
 get_target_property(warppipe_INCLUDES warppipe INCLUDE_DIRECTORIES)
+get_target_property(warppipe_LIBRARIES warppipe LINK_LIBRARIES)
+
 add_library(warppipe-test_static STATIC
   ${warppipe_SOURCES}
 )
@@ -59,6 +62,7 @@ target_link_libraries(warppipe-tests
   PRIVATE
     gcov
     warppipe-test_static
+    ${warppipe_LIBRARIES}
     ${GTEST_MAIN_LIBRARIES}
 )
 
