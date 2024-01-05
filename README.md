@@ -65,7 +65,7 @@ Generated coverage report can be found in the `coverage` folder.
 Building memory-mock
 --------------------
 
-This repository contains simple `memory-mock` that uses `warp-pipe` library and acts as simple PCIe device that emulates memory.
+This repository contains a `memory-mock` application that uses `warp-pipe` library and acts as simple PCIe device that emulates memory.
 To build it, use the following snippet:
 
 <!-- name="memory-mock-build" -->
