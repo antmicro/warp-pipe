@@ -8,6 +8,8 @@ It requires [memory-mock](#memory-mock) to be built and available in the `build_
 
 To run any Zephyr samples and tests from this repository, initialize the Zephyr environment with `west`.
 
+Ensure your system is prepared following the [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) and that you have the `west` package and the Zephyr SDK installed.
+
 ```
 west init --local --mf zephyr-samples/warp-pipe-zephyr.yml
 west update -o=--depth=1 -n
@@ -15,6 +17,14 @@ west zephyr-export
 ```
 
 ## Running Twister
+
+The prepared test suite contains the following tests:
+* `test_read`
+* `test_write`
+* `test_unaligned_read`
+* `test_unaligned_write`
+
+All of these tests rely on low-level `warp-pipe` API to trigger basic transactions and access data stored in `memory-mock`.
 
 To start tests defined in a suite from the `zephyr-tests` directory, run:
 
