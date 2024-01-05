@@ -15,6 +15,11 @@ Use the following command to build this sample:
 west build -p -d build.pcie_scan -b qemu_cortex_a53 zephyr-samples/pcie_scan
 ```
 
+Run the sample with:
+```
+west build -d build.pcie_scan -t run
+```
+
 You should see the following output on the standard output console:
 ```
 *** Booting Zephyr OS build zephyr-v3.5.0 ***
