@@ -1,10 +1,9 @@
 # Using the library
 
-The library itself is called `warp-pipe`.  You can build it using the instructions provided [in the repo][readme].
+The library itself is called `warp-pipe`. You can build it using the instructions provided [in the "Basic usage" chapter](#basics).
 Its API revolves around 'servers' (connection pools) and 'clients' (connections).
 
 [readme]: https://github.com/antmicro/warp-pipe#readme
-
 You can then link the library to your project using pkg-config as usual, like:
 ```
 LDFLAGS += $(pkg-config --libs warp-pipe)
@@ -36,7 +35,7 @@ The example is an excellent peripheral implementation to look at in order to lea
 
 A connection pool is capable of either listening on a port or connecting to a remote address,
 and managing the resulting connections on a basic level.
-In order to do anything useful with the pool, you need to register an accept callback
+In order to do anything useful with the pool, you need to register an `accept` callback
 initializing the particular incoming (or outgoing) connections with `warppipe_server_register_accept_cb`.
 Most of the library functions (including this one) take callbacks that accept an additional `private_data` parameter,
 just like `arg` in `qsort(3)` or `pthread_create(3)`, allowing to pass additional data (a closure) to the callback.
@@ -106,4 +105,34 @@ On the peripheral side you can implement the configuration space with a simple A
 ```c
 warppipe_register_config0_read_cb(&conn, config_read_cb);
 warppipe_register_config0_write_cb(&conn, config_write_cb);
+```
+
+(wire-format)=
+## Wire format
+
+The format is just a single `\x02` (DLLP) or `\x03` (TLP) byte with the relevant packet contents appended,
+which means a structure as follows:
+
+```
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Protocol = 2  |   DLLP Type   |  (type-dependent contents...  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      ...)     |           16-bit CRC            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Protocol = 3  |0 0 0 0|  TLP Sequence Number  | Fmt |   Type  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |T|     |T|A|L|T|T|E|   |   |                   |               :
+   |9|  TC |8|t|N|H|D|P|Att| AT|       Length      |               :
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+               :
+   :                              TLP payload...                   :
+   :                                                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                           32-bit LCRC                         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
