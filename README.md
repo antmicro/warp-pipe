@@ -16,7 +16,7 @@ creating PCIe links in a distributed simulation environment. This includes:
 Building and installing warp-pipe
 ---------------------------------
 
-To build the Warp Pipe, use the following snippet:
+To build Warp Pipe, use the following snippet:
 
 <!-- name="warp-pipe-build" -->
 ```
@@ -59,7 +59,7 @@ To generate tests coverage report, use the following snippet:
 ./scripts/coverage.sh
 ```
 
-Generated coverage report can be found in `coverage` folder.
+Generated coverage report can be found in the `coverage` folder.
 
 
 Building memory-mock
@@ -75,7 +75,7 @@ cmake -S memory-mock -B build_memory_mock
 make -j $(nproc) -C build_memory_mock
 ```
 
-If you installed `warp-pipe` to custom localization, you might also need to set `PKG_CONFIG_PATH` to PATH containing `warp-pipe.pc` file:
+If you installed `warp-pipe` to custom localization, you might also need to set `PKG_CONFIG_PATH` to the path containing `warp-pipe.pc` file:
 ```
 PKG_CONFIG_PATH=`pwd`/install/lib/pkgconfig cmake -S memory-mock -B build_memory_mock
 ```
