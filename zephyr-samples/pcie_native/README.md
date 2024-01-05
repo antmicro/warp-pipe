@@ -11,17 +11,6 @@ Please refer to [preparing the environment for Zephyr samples](../../README.md#p
 This sample requires installed `warp-pipe` library.
 Please refer to [installing warp-pipe](../../README.md#building-and-installing-warp-pipe) for more information.
 
-This sample requires also custom QEMU with warp-pipe integration. Use following commands to build it:
-<!-- name="pcie-qemu-build" -->
-```
-mkdir qemu/build
-pushd qemu/build
-../configure --enable-warp-pipe --target-list=x86_64-softmmu
-make -j$(nproc)
-export QEMU_BIN_PATH=`pwd`
-popd
-```
-
 Use the following command to build this sample:
 <!-- name="pcie-native-build" -->
 ```
@@ -59,6 +48,6 @@ After that, you can terminate all background processes (the sleep is needed if y
 <!-- name="pcie-native-teardown" -->
 ```
 sleep 10
-kill -2 $ZEPHYR_PID
-kill -2 $SERVER_PID
+kill -INT $ZEPHYR_PID
+kill -INT $SERVER_PID
 ```
