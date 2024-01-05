@@ -170,7 +170,7 @@ void handle_memory_write_request(struct warppipe_client_t *client, const struct 
 		return;
 	}
 
-	const void *data = pkt->tlp_fmt & PCIE_TLP_FMT_4DW ? pkt->tlp_req.r_data64 : pkt->tlp_req.r_data32;
+	const uint8_t *data = pkt->tlp_fmt & PCIE_TLP_FMT_4DW ? pkt->tlp_req.r_data64 : pkt->tlp_req.r_data32;
 
 	if ((pkt->tlp_req.r_first_be & 7) == 0) {
 		addr += 3;

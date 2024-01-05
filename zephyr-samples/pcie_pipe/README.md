@@ -34,6 +34,7 @@ Now you can launch both executables:
 ```
 west build -t run -d build.pcie_pipe_server/ &
 SERVER_PID=$!
+sleep 2 # wait for server to start
 west build -t run -d build.pcie_pipe_client/ &
 CLIENT_PID=$!
 ```
