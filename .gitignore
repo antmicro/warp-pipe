@@ -1,6 +1,10 @@
 build
-*.build
+build_memory_mock
+build.*
 coverage
 *.pl
 tags
 *.tar.gz
+twister-out*
+*.pyc
+install
