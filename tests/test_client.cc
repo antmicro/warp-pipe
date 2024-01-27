@@ -18,12 +18,12 @@
 #include <gtest/gtest.h>
 #include "common.h"
 
-extern "C" {
 #include <warppipe/client.h>
 #include <warppipe/proto.h>
 #include <warppipe/config.h>
 #include <warppipe/crc.h>
 
+extern "C" {
 FAKE_VALUE_FUNC(int, recv, int, void *, size_t, int);
 FAKE_VALUE_FUNC(int, send, int, void *, size_t, int);
 }

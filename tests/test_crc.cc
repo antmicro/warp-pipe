@@ -18,10 +18,8 @@
 #include <gtest/gtest.h>
 #include "common.h"
 
-extern "C" {
 #include <warppipe/proto.h>
 #include <warppipe/crc.h>
-}
 
 TEST(TestCrc, Crc32Correct) {
 	warppipe_pcie_transport tport = {

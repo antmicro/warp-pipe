@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
-#include <zephyr/ztest.h>
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include <warppipe/client.h>
-#include <warppipe/server.h>
-#include <warppipe/config.h>
-#ifdef __cplusplus
-}
-#endif
 #include <sys/socket.h>
 #include <unistd.h>
 #include <stdlib.h>
 
-struct read_compl_data_t {
+#include <warppipe/client.h>
+#include <warppipe/server.h>
+#include <warppipe/config.h>
+#include <zephyr/ztest.h>
+
+struct read_compl_data {
 	uint8_t *buf;
 	int buf_size;
 	int ret;

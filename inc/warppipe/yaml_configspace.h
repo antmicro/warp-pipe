@@ -21,6 +21,14 @@
 #include <stdio.h>
 #include <warppipe/proto.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int pcie_configuration_space_header_from_yaml(FILE *data, struct pcie_configuration_space_header_type0 *result);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* WARP_PIPE_YAML_CONFIGSPACE_H */

@@ -20,10 +20,10 @@
 #include <gtest/gtest.h>
 #include "common.h"
 
-extern "C" {
 #include <warppipe/server.h>
 #include <warppipe/config.h>
 
+extern "C" {
 FAKE_VALUE_FUNC(int, bind, int, void *, int);
 FAKE_VALUE_FUNC(int, socket, int, int, int);
 FAKE_VALUE_FUNC(int, listen, int, int);

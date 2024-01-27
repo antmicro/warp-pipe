@@ -19,10 +19,8 @@
 #include "common.h"
 #include <stdio.h>
 
-extern "C" {
 #include <warppipe/proto.h>
 #include <warppipe/yaml_configspace.h>
-}
 
 #define SPLIT2(hi, lo) ((hi << 8) | lo)
 #define SPLIT3(hi, mid, lo) ((hi << 16) | (mid << 8) | lo)

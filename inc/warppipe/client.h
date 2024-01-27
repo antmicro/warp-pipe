@@ -25,6 +25,10 @@
 #include <warppipe/config.h>
 #include <warppipe/proto.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct warppipe_completion_status_t {
 	int error_code;
 };
@@ -115,5 +119,9 @@ int warppipe_read(struct warppipe_client_t *client, int bar_idx, uint64_t addr, 
  *	-1 - network error
  */
 int warppipe_write(struct warppipe_client_t *client, int bar_idx, uint64_t addr, const void *data, int length);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* WARP_PIPE_CLIENT_H */
