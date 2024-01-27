@@ -16,6 +16,7 @@
  */
 
 #include <endian.h>
+#include <libgen.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -240,13 +241,27 @@ static void server_client_accept(struct warppipe_client *client, void *private_d
 		configuration_space.bar[bar_idx] = bars_config[bar_idx].config & BAR_CONF_MASK;
 }
 
-int main(int argc, char *argv[])
+static void usage(char *progname)
+{
+	fprintf(stderr,
+	"Usage: %s [-4|-6] [-c] [-a <addr>] [-p <port>]\n"
+	"\n"
+	"Options:\n"
+	" -4|-6      force IPv4/IPv6 (default: system preference)\n"
+	" -c         client mode (default: server mode),\n"
+	" -a <addr>  server address (default: wildcard address for server, loopback address for client),\n"
+	" -p <port>  server port (default: " SERVER_PORT_NUM "),\n"
+	" -f path    path to yaml file with configuration space config (default: none)\n"
+	"\n", basename(progname));
+}
+
+static int parse_args(int argc, char **argv)
 {
 	int c;
 	int ret;
 	char *yaml_path = NULL;
 
-	while ((c = getopt(argc, argv, "ca:p:46f:")) != -1) {
+	while ((c = getopt(argc, argv, "ca:p:46f:h")) != -1) {
 		switch (c) {
 		case 'c':
 			server.listen = false;
@@ -264,17 +279,11 @@ int main(int argc, char *argv[])
 		case 'f':
 			yaml_path = optarg;
 			break;
+		case 'h':
+			usage(argv[0]);
+			exit(0);
 		default:  /* '?' */
-			fprintf(stderr,
-				"Usage: %s [-4|-6] [-c] [-a <addr>] [-p <port>]\n"
-				"\n"
-				"Options:\n"
-				" -4|-6      force IPv4/IPv6 (default: system preference)\n"
-				" -c         client mode (default: server mode),\n"
-				" -a <addr>  server address (default: wildcard address for server, loopback address for client),\n"
-				" -p <port>  server port (default: " SERVER_PORT_NUM "),\n"
-				" -f path    path to yaml file with configuration space config (default: none)\n"
-				"\n", *argv);
+			usage(argv[0]);
 			return 1;
 		}
 	}
@@ -299,6 +308,26 @@ int main(int argc, char *argv[])
 		syslog(LOG_INFO, "Loaded configuration space from file: %s\n", yaml_path);
 	}
 
+	return 0;
+}
+
+static int verify_args(void)
+{
+	/* verify configuration */
+	for (int i = 0; i < BAR_N; i++) {
+		struct bar_config *const bar = &bars_config[i];
+
+		if (!BAR_CHECK_SIZE(bar->size)) {
+			syslog(LOG_ERR, "Bar size must be a power of 2 (BAR%d has size %d).", i, bar->size);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int memory_mock_setup(int argc, char **argv)
+{
 	/* syslog initialization */
 	setlogmask(LOG_UPTO(LOG_DEBUG));
 	openlog(PRJ_NAME_SHORT, LOG_CONS | LOG_NDELAY, LOG_USER);
@@ -306,15 +335,17 @@ int main(int argc, char *argv[])
 	/* server initialization */
 	syslog(LOG_NOTICE, "Starting " PRJ_NAME_LONG "...");
 
-	/* verify configuration */
-	for (int i = 0; i < BAR_N; i++) {
-		struct bar_config *const bar = bars_config[i];
-
-		if (!BAR_CHECK_SIZE(bar.size)) {
-			syslog(LOG_ERR, "Bar size must be a power of 2 (BAR%d has size %d).", i, bar.size);
-			return 1;
-		}
+	if (parse_args(argc, argv) || verify_args()) {
+		closelog();
+		return 1;
 	}
+
+	return 0;
+}
+
+static int memory_mark_start(void)
+{
+	int ret;
 
 	warppipe_server_register_accept_cb(&server, server_client_accept);
 
@@ -330,4 +361,9 @@ int main(int argc, char *argv[])
 	closelog();
 
 	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	return memory_mock_setup(argc, argv) || memory_mark_start();
 }
