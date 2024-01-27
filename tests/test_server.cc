@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <sys/socket.h>
+
 #include <gtest/gtest.h>
 #include "common.h"
 
@@ -25,15 +27,15 @@ extern "C" {
 FAKE_VALUE_FUNC(int, bind, int, void *, int);
 FAKE_VALUE_FUNC(int, socket, int, int, int);
 FAKE_VALUE_FUNC(int, listen, int, int);
-FAKE_VALUE_FUNC(int, accept, int, struct sockaddr *, socklen_t *);
-FAKE_VALUE_FUNC(int, getsockname, int, struct sockaddr *, socklen_t *);
-FAKE_VALUE_FUNC(int, getpeername, int, struct sockaddr *, socklen_t *);
-FAKE_VALUE_FUNC(int, getnameinfo, struct sockaddr *, socklen_t *, char *, socklen_t, char *, socklen_t, int);
+FAKE_VALUE_FUNC(int, accept, int, sockaddr *, socklen_t *);
+FAKE_VALUE_FUNC(int, getsockname, int, sockaddr *, socklen_t *);
+FAKE_VALUE_FUNC(int, getpeername, int, sockaddr *, socklen_t *);
+FAKE_VALUE_FUNC(int, getnameinfo, sockaddr *, socklen_t *, char *, socklen_t, char *, socklen_t, int);
 FAKE_VALUE_FUNC(int, setsockopt, int, int, int,const void *, socklen_t);
 }
 
 TEST(TestServer, CreatesServer) {
-	struct warppipe_server_t server = {};
+	warppipe_server_t server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -52,7 +54,7 @@ TEST(TestServer, CreatesServer) {
 }
 
 TEST(TestServer, CreatesServerFailSocket) {
-	struct warppipe_server_t server = {};
+	warppipe_server_t server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -64,7 +66,7 @@ TEST(TestServer, CreatesServerFailSocket) {
 }
 
 TEST(TestServer, CreatesServerFailBind) {
-	struct warppipe_server_t server = {};
+	warppipe_server_t server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -78,7 +80,7 @@ TEST(TestServer, CreatesServerFailBind) {
 }
 
 TEST(TestServer, ServerLoopEmpty) {
-	struct warppipe_server_t server = {};
+	warppipe_server_t server = {};
 	server.listen = true;
 	server.port = "0";
 

@@ -29,7 +29,7 @@ FAKE_VALUE_FUNC(int, send, int, void *, size_t, int);
 }
 
 TEST(TestClient, CreatesClientNode) {
-	struct warppipe_client_t client;
+	warppipe_client_t client;
 
 	warppipe_client_create(&client, 10);
 	EXPECT_TRUE(client.active);
@@ -37,7 +37,7 @@ TEST(TestClient, CreatesClientNode) {
 }
 
 TEST(TestClient, ClientDisconnects) {
-	struct warppipe_client_t client;
+	warppipe_client_t client;
 
 	RESET_FAKE(recv);
 	recv_fake.return_val = 0;
@@ -49,12 +49,12 @@ TEST(TestClient, ClientDisconnects) {
 }
 
 TEST(TestClient, ClientAcks) {
-	struct warppipe_client_t client;
+	warppipe_client_t client;
 	enum pcie_dllp_type type = PCIE_DLLP_ACK;
 	uint16_t seqno = 1234;
 
 	/* output buffer */
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_pcie_transport tport_out = {0};
 
 	RESET_FAKE(send);
 	send_fake.custom_fake = [&](int sockfd, void *msg, size_t len, int flags) {
@@ -74,12 +74,12 @@ TEST(TestClient, ClientAcks) {
 }
 
 TEST(TestClient, ClientAckFails) {
-	struct warppipe_client_t client;
+	warppipe_client_t client;
 	enum pcie_dllp_type type = PCIE_DLLP_ACK;
 	uint16_t seqno = 1234;
 
 	RESET_FAKE(send);
-	send_fake.return_val = sizeof(struct pcie_dllp) + 100;
+	send_fake.return_val = sizeof(pcie_dllp) + 100;
 
 	warppipe_client_create(&client, 10);
 	warppipe_ack(&client, type, seqno);
@@ -88,7 +88,7 @@ TEST(TestClient, ClientAckFails) {
 }
 
 TEST(TestClient, ClientAckFailsErrno) {
-	struct warppipe_client_t client;
+	warppipe_client_t client;
 	enum pcie_dllp_type type = PCIE_DLLP_ACK;
 	uint16_t seqno = 1234;
 
@@ -102,10 +102,10 @@ TEST(TestClient, ClientAckFailsErrno) {
 }
 
 TEST(TestClient, ClientReadFails) {
-	struct warppipe_client_t client;
+	warppipe_client_t client;
 
 	RESET_FAKE(recv);
-	recv_fake.return_val = sizeof(struct pcie_dllp) + 100;
+	recv_fake.return_val = sizeof(pcie_dllp) + 100;
 
 	warppipe_client_create(&client, 10);
 	warppipe_client_read(&client);
@@ -114,9 +114,9 @@ TEST(TestClient, ClientReadFails) {
 }
 
 TEST(TestClient, ClientReadDLLP) {
-	struct warppipe_client_t client;
+	warppipe_client_t client;
 
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_DLLP;
 	tport_out.t_dllp.dl_type = PCIE_DLLP_ACK;
@@ -136,8 +136,8 @@ TEST(TestClient, ClientReadDLLP) {
 }
 
 TEST(TestClient, ClientReadTLPEmpty) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_TLP;
 	pcie_lcrc32(&tport_out.t_tlp);
@@ -156,8 +156,8 @@ TEST(TestClient, ClientReadTLPEmpty) {
 }
 
 TEST(TestClient, ClientReadTLPTotalLengthNegative) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_TLP;
 	tport_out.t_tlp.dl_tlp.tlp_fmt = 4; // undefined format
@@ -177,8 +177,8 @@ TEST(TestClient, ClientReadTLPTotalLengthNegative) {
 }
 
 TEST(TestClient, ClientReadTLPTotalRecvFail) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_TLP;
 	tport_out.t_tlp.dl_tlp.tlp_fmt = 0;
@@ -207,8 +207,8 @@ TEST(TestClient, ClientReadTLPTotalRecvFail) {
 }
 
 TEST(TestClient, ClientReadTLPIOWR) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_TLP;
 	tport_out.t_tlp.dl_tlp.tlp_fmt = 1;
@@ -230,7 +230,7 @@ TEST(TestClient, ClientReadTLPIOWR) {
 
 	RESET_FAKE(recv);
 	RESET_FAKE(send);
-	send_fake.return_val = sizeof(struct pcie_dllp) + 1;
+	send_fake.return_val = sizeof(pcie_dllp) + 1;
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes, 2);
 
 	warppipe_client_create(&client, 10);
@@ -240,8 +240,8 @@ TEST(TestClient, ClientReadTLPIOWR) {
 }
 
 TEST(TestClient, ClientReadTLPCPL) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_TLP;
 	tport_out.t_tlp.dl_tlp.tlp_fmt = 0;
@@ -263,7 +263,7 @@ TEST(TestClient, ClientReadTLPCPL) {
 
 	RESET_FAKE(recv);
 	RESET_FAKE(send);
-	send_fake.return_val = sizeof(struct pcie_dllp) + 1;
+	send_fake.return_val = sizeof(pcie_dllp) + 1;
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes, 2);
 
 	warppipe_client_create(&client, 10);
@@ -273,8 +273,8 @@ TEST(TestClient, ClientReadTLPCPL) {
 }
 
 TEST(TestClient, ClientReadTLPMRDLK32) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_TLP;
 	tport_out.t_tlp.dl_tlp.tlp_fmt = 0;
@@ -296,7 +296,7 @@ TEST(TestClient, ClientReadTLPMRDLK32) {
 
 	RESET_FAKE(recv);
 	RESET_FAKE(send);
-	send_fake.return_val = sizeof(struct pcie_dllp) + 1;
+	send_fake.return_val = sizeof(pcie_dllp) + 1;
 	SET_CUSTOM_FAKE_SEQ(recv, custom_fakes, 2);
 
 	warppipe_client_create(&client, 10);
@@ -306,8 +306,8 @@ TEST(TestClient, ClientReadTLPMRDLK32) {
 }
 
 TEST(TestClient, ClientReadTLPCPLFail) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_TLP;
 	tport_out.t_tlp.dl_tlp.tlp_fmt = 0;
@@ -327,7 +327,7 @@ TEST(TestClient, ClientReadTLPCPLFail) {
 		}
 	};
 
-	int custom_send_fake_return_vals[3] = {sizeof(struct pcie_dllp) + 1, 15, -1};
+	int custom_send_fake_return_vals[3] = {sizeof(pcie_dllp) + 1, 15, -1};
 
 	RESET_FAKE(recv);
 	RESET_FAKE(send);
@@ -345,9 +345,9 @@ TEST(TestClient, ClientReadTLPCPLFail) {
 }
 
 TEST(TestClient, ClientReadTLPCPLCRCFail) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
-	struct warppipe_pcie_transport tport_response = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
+	warppipe_pcie_transport tport_response = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_TLP;
 	tport_out.t_tlp.dl_tlp.tlp_fmt = 0;
@@ -386,8 +386,8 @@ TEST(TestClient, ClientReadTLPCPLCRCFail) {
 }
 
 TEST(TestClient, ClientReadCreditDLL) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_DLLP;
 	tport_out.t_dllp.dl_fc.fc_type = 1;
@@ -407,7 +407,7 @@ TEST(TestClient, ClientReadCreditDLL) {
 		}
 	};
 
-	int custom_send_fake_return_vals[3] = {sizeof(struct pcie_dllp) + 1, 15, 1};
+	int custom_send_fake_return_vals[3] = {sizeof(pcie_dllp) + 1, 15, 1};
 
 	RESET_FAKE(recv);
 	RESET_FAKE(send);
@@ -421,8 +421,8 @@ TEST(TestClient, ClientReadCreditDLL) {
 }
 
 TEST(TestClient, ClientReadUnknownDLL) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = PCIE_PROTO_DLLP;
 	tport_out.t_dllp.dl_fc.fc_type = 0;
@@ -442,7 +442,7 @@ TEST(TestClient, ClientReadUnknownDLL) {
 		}
 	};
 
-	int custom_send_fake_return_vals[3] = {sizeof(struct pcie_dllp) + 1, 15, 1};
+	int custom_send_fake_return_vals[3] = {sizeof(pcie_dllp) + 1, 15, 1};
 
 	RESET_FAKE(recv);
 	RESET_FAKE(send);
@@ -456,8 +456,8 @@ TEST(TestClient, ClientReadUnknownDLL) {
 }
 
 TEST(TestClient, ClientReadUnknown) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_out = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_out = {0};
 	int total_sent = 0;
 	tport_out.t_proto = 111;
 
@@ -475,10 +475,10 @@ TEST(TestClient, ClientReadUnknown) {
 }
 
 TEST(TestClient, ClientPcieRead) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_request = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_request = {0};
 	int tport_request_recv = 0;
-	struct warppipe_pcie_transport *tport_request2 = (struct warppipe_pcie_transport *)malloc(sizeof(struct warppipe_pcie_transport) + 40);
+	warppipe_pcie_transport *tport_request2 = (warppipe_pcie_transport *)malloc(sizeof(warppipe_pcie_transport) + 40);
 	int tport_response_send = 0;
 	int total_sent2 = 0;
 	int total_sent_rec = 0;
@@ -551,7 +551,7 @@ TEST(TestClient, ClientPcieRead) {
 
 	ASSERT_EQ(rc, 0);
 
-	rc = warppipe_read(&client, 0, 0x0, 40, [](const struct warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
+	rc = warppipe_read(&client, 0, 0x0, 40, [](const warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
 	{
 		uint8_t *result = (uint8_t *)data;
 		ASSERT_EQ(completion_status.error_code, 0);
@@ -597,11 +597,11 @@ TEST(TestClient, ClientPcieRead) {
 }
 
 TEST(TestClient, ClientPcieSmallRead) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport tport_request = {0};
+	warppipe_client_t client;
+	warppipe_pcie_transport tport_request = {0};
 	int tport_request_recv = 0;
 	int read_size = 1;
-	struct warppipe_pcie_transport *tport_request2 = (struct warppipe_pcie_transport *)malloc(sizeof(struct warppipe_pcie_transport) + read_size);
+	warppipe_pcie_transport *tport_request2 = (warppipe_pcie_transport *)malloc(sizeof(warppipe_pcie_transport) + read_size);
 	int tport_response_send = 0;
 	int total_sent2 = 0;
 	int total_sent_rec = 0;
@@ -673,7 +673,7 @@ TEST(TestClient, ClientPcieSmallRead) {
 	}, NULL);
 	ASSERT_EQ(rc_bar, 0);
 
-	int rc_read = warppipe_read(&client, 0, 0x0, read_size, [](const struct warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
+	int rc_read = warppipe_read(&client, 0, 0x0, read_size, [](const warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
 	{
 		uint8_t *result = (uint8_t *)data;
 		ASSERT_EQ(completion_status.error_code, 0);
@@ -719,8 +719,8 @@ TEST(TestClient, ClientPcieSmallRead) {
 }
 
 TEST(TestClient, ClientPcieWrite) {
-	struct warppipe_client_t client;
-	struct warppipe_pcie_transport *tport_request = (struct warppipe_pcie_transport *)calloc(1, sizeof(struct warppipe_pcie_transport) + 40);
+	warppipe_client_t client;
+	warppipe_pcie_transport *tport_request = (warppipe_pcie_transport *)calloc(1, sizeof(warppipe_pcie_transport) + 40);
 	int tport_response_send = 0;
 	uint8_t write_data[40];
 
@@ -796,9 +796,9 @@ TEST(TestClient, ClientPcieWrite) {
 
 
 TEST(TestClient, ClientTlpReqSetAddr) {
-	struct warppipe_pcie_transport tport = {0};
+	warppipe_pcie_transport tport = {0};
 
-	struct pcie_tlp *tlp = &tport.t_tlp.dl_tlp;
+	pcie_tlp *tlp = &tport.t_tlp.dl_tlp;
 
 	tlp_req_set_addr(tlp, 0x0, 0); // addr aligned, 0 bytes (0 DW)
 	ASSERT_EQ(tlp_req_get_addr(tlp), 0x0);

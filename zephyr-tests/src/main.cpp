@@ -36,9 +36,9 @@ struct read_compl_data_t {
 	bool finished;
 };
 
-static void read_compl(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *private_data)
+static void read_compl(const warppipe_completion_status_t completion_status, const void *data, int length, void *private_data)
 {
-	struct read_compl_data_t *read_data = (struct read_compl_data_t *)private_data;
+	read_compl_data_t *read_data = (read_compl_data_t *)private_data;
 
 	if (completion_status.error_code) {
 		read_data->ret = completion_status.error_code;
@@ -53,7 +53,7 @@ static void read_compl(const struct warppipe_completion_status_t completion_stat
 	read_data->finished = true;
 }
 
-static int wait_for_completion(struct warppipe_server_t *server, struct read_compl_data_t *read_data)
+static int wait_for_completion(warppipe_server_t *server, read_compl_data_t *read_data)
 {
 	while (!read_data->finished && !server->quit)
 		warppipe_server_loop(server);
@@ -64,7 +64,7 @@ static int wait_for_completion(struct warppipe_server_t *server, struct read_com
 	return 0;
 }
 
-static int read_config_header_field(struct warppipe_server_t *server, struct warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf)
+static int read_config_header_field(warppipe_server_t *server, warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf)
 {
 	uint64_t aligned_addr = addr & ~0x3;
 	uint64_t offset = addr & 0x3;
@@ -72,7 +72,7 @@ static int read_config_header_field(struct warppipe_server_t *server, struct war
 
 	zassert_true(length + offset <= 4, "Invalid config read");
 
-	struct read_compl_data_t read_data = {
+	read_compl_data_t read_data = {
 		.buf = (uint8_t *)&aligned_buf,
 		.buf_size = 4,
 		.ret = 0,
@@ -89,7 +89,7 @@ static int read_config_header_field(struct warppipe_server_t *server, struct war
 	return length;
 }
 
-static int enumerate(struct warppipe_server_t *server, struct warppipe_client_t *client)
+static int enumerate(warppipe_server_t *server, warppipe_client_t *client)
 {
 	uint16_t vendor_id;
 	uint8_t header_type;
@@ -168,7 +168,7 @@ static void fixture_teardown(void *fixture)
 
 ZTEST_SUITE(tests, NULL, fixture_setup, fixture_before, fixture_after, fixture_teardown);
 
-static int read_data(warppipe_server_t *pcie_server, struct warppipe_client_t *client, int bar, uint64_t addr, int length, struct read_compl_data_t *read_data)
+static int read_data(warppipe_server_t *pcie_server, warppipe_client_t *client, int bar, uint64_t addr, int length, read_compl_data_t *read_data)
 {
 	int ret;
 
@@ -200,7 +200,7 @@ ZTEST_F(tests, test_read)
 	auto client = TAILQ_FIRST(&pcie_server->clients)->client;
 
 	uint8_t read_buf[16];
-	struct read_compl_data_t read = {
+	read_compl_data_t read = {
 		.buf = read_buf,
 		.buf_size = 16,
 		.ret = -1,
@@ -218,7 +218,7 @@ ZTEST_F(tests, test_unaligned_read)
 	auto client = TAILQ_FIRST(&pcie_server->clients)->client;
 
 	uint8_t read_buf[1];
-	struct read_compl_data_t read = {
+	read_compl_data_t read = {
 		.buf = read_buf,
 		.buf_size = 1,
 		.ret = -1,
@@ -238,7 +238,7 @@ ZTEST_F(tests, test_unaligned_write)
 	zassert_equal(warppipe_write(client, 1, 1, buf, 5), 0, "Failed to write data to PCIe BAR");
 
 	uint8_t read_buf[5];
-	struct read_compl_data_t read = {
+	read_compl_data_t read = {
 		.buf = read_buf,
 		.buf_size = 5,
 		.ret = -1,

@@ -24,7 +24,7 @@ extern "C" {
 }
 
 TEST(TestCrc, Crc32Correct) {
-	struct warppipe_pcie_transport tport = {
+	warppipe_pcie_transport tport = {
 		.t_proto = PCIE_PROTO_TLP,
 		.t_tlp = {
 			.dl_seqno_hi = 0,
@@ -47,7 +47,7 @@ TEST(TestCrc, Crc32Correct) {
 }
 
 TEST(TestCrc, Crc16Correct) {
-	struct warppipe_pcie_transport tport = {
+	warppipe_pcie_transport tport = {
 		.t_proto = PCIE_PROTO_DLLP,
 		.t_dllp = {
 			.dl_acknak = {
