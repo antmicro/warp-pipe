@@ -75,7 +75,7 @@ struct dma_emul_data {
 	struct dma_emul_work work;
 };
 
-static struct warppipe_server_t pcie_server = {
+static struct warppipe_server pcie_server = {
 	.listen = false,
 	.addr_family = AF_UNSPEC,
 	.host = CONFIG_PCIE_PIPE_SERVER,
@@ -213,7 +213,7 @@ static const char *dma_emul_block_config_to_string(const struct dma_block_config
 static uint8_t result[4];
 static bool got_result = false;
 
-static void pcie_completion_cb(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *unused)
+static void pcie_completion_cb(const struct warppipe_completion_status completion_status, const void *data, int length, void *unused)
 {
 	uint8_t *response = (uint8_t *)data;
 
@@ -446,7 +446,7 @@ static int dma_emul_reload(const struct device *dev, uint32_t channel, dma_addr_
 	return -ENOSYS;
 }
 
-static int enumerate(struct warppipe_server_t *server, struct warppipe_client_t *client)
+static int enumerate(struct warppipe_server *server, struct warppipe_client *client)
 {
 	int ret;
 	uint16_t vendor_id;

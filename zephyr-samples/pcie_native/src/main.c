@@ -31,7 +31,7 @@
 
 LOG_MODULE_REGISTER(pcie_native, LOG_LEVEL_DBG);
 
-static struct warppipe_server_t pcie_server = {
+static struct warppipe_server pcie_server = {
 	.listen = false,
 	.addr_family = AF_UNSPEC,
 	.host = CONFIG_PCIE_PIPE_SERVER,
@@ -47,7 +47,7 @@ static void print_read_data(uint8_t *buffer, int length)
 	LOG_PRINTK("\n");
 }
 
-static int enumerate(struct warppipe_server_t *server, struct warppipe_client_t *client)
+static int enumerate(struct warppipe_server *server, struct warppipe_client *client)
 {
 	int ret;
 	uint16_t vendor_id;
@@ -117,7 +117,7 @@ int main(void)
 
 	LOG_INF("Started client");
 
-	struct warppipe_client_t *client = TAILQ_FIRST(&pcie_server.clients)->client;
+	struct warppipe_client *client = TAILQ_FIRST(&pcie_server.clients)->client;
 
 	ret = enumerate(&pcie_server, client);
 	if (ret < 0) {

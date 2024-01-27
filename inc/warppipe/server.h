@@ -29,9 +29,9 @@
 extern "C" {
 #endif
 
-typedef void (*warppipe_server_accept_cb_t)(struct warppipe_client_t *client, void *private_data);
+typedef void (*warppipe_server_accept_cb_t)(struct warppipe_client *client, void *private_data);
 
-struct warppipe_server_t {
+struct warppipe_server {
 	/* server's socket fd */
 	int fd;
 
@@ -66,11 +66,11 @@ struct warppipe_server_t {
 	warppipe_server_accept_cb_t accept_cb;
 };
 
-int warppipe_server_create(struct warppipe_server_t *server);
-void warppipe_server_loop(struct warppipe_server_t *server);
-void warppipe_server_disconnect_clients(struct warppipe_server_t *server, bool
-		(*condition)(struct warppipe_client_t *client));
-void warppipe_server_register_accept_cb(struct warppipe_server_t *server, warppipe_server_accept_cb_t server_accept_cb);
+int warppipe_server_create(struct warppipe_server *server);
+void warppipe_server_loop(struct warppipe_server *server);
+void warppipe_server_disconnect_clients(struct warppipe_server *server, bool
+		(*condition)(struct warppipe_client *client));
+void warppipe_server_register_accept_cb(struct warppipe_server *server, warppipe_server_accept_cb_t server_accept_cb);
 
 #ifdef __cplusplus
 }

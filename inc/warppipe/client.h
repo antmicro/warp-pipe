@@ -29,17 +29,17 @@
 extern "C" {
 #endif
 
-struct warppipe_completion_status_t {
+struct warppipe_completion_status {
 	int error_code;
 };
 
 typedef int (*warppipe_read_cb_t)(uint64_t addr, void *data, int length, void *private_data);
 typedef void (*warppipe_write_cb_t)(uint64_t addr, const void *data, int length, void *private_data);
 
-typedef void (*warppipe_completion_cb_t)(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *private_data);
+typedef void (*warppipe_completion_cb_t)(const struct warppipe_completion_status completion_status, const void *data, int length, void *private_data);
 
 /* client struct */
-struct warppipe_client_t {
+struct warppipe_client {
 	int fd;
 	int seqno;
 	bool active;
@@ -57,24 +57,24 @@ struct warppipe_client_t {
 };
 
 /* BSD TAILQ (sys/queue) node struct */
-struct warppipe_client_node_t {
-	TAILQ_ENTRY(warppipe_client_node_t) next;
-	struct warppipe_client_t *client;
+struct warppipe_client_node {
+	TAILQ_ENTRY(warppipe_client_node) next;
+	struct warppipe_client *client;
 };
 
 /* declare BSD TAILQ client linked-list */
-TAILQ_HEAD(warppipe_client_q, warppipe_client_node_t);
+TAILQ_HEAD(warppipe_client_q, warppipe_client_node);
 
-void warppipe_client_create(struct warppipe_client_t *client, int client_fd);
-void warppipe_client_read(struct warppipe_client_t *client);
-int warppipe_ack(struct warppipe_client_t *client, enum pcie_dllp_type type, uint16_t seqno);
+void warppipe_client_create(struct warppipe_client *client, int client_fd);
+void warppipe_client_read(struct warppipe_client *client);
+int warppipe_ack(struct warppipe_client *client, enum pcie_dllp_type type, uint16_t seqno);
 
 /* called on Completer to get config0 data */
-void warppipe_register_config0_read_cb(struct warppipe_client_t *client, warppipe_read_cb_t warppipe_read_cb);
+void warppipe_register_config0_read_cb(struct warppipe_client *client, warppipe_read_cb_t warppipe_read_cb);
 /* called on Completer to write config0 data */
-void warppipe_register_config0_write_cb(struct warppipe_client_t *client, warppipe_write_cb_t warppipe_write_cb);
+void warppipe_register_config0_write_cb(struct warppipe_client *client, warppipe_write_cb_t warppipe_write_cb);
 /* called on Completer to register new BAR with associated read/write callbacks */
-int warppipe_register_bar(struct warppipe_client_t *client, uint64_t bar, uint32_t bar_size, int bar_idx, warppipe_read_cb_t read_cb, warppipe_write_cb_t write_cb);
+int warppipe_register_bar(struct warppipe_client *client, uint64_t bar, uint32_t bar_size, int bar_idx, warppipe_read_cb_t read_cb, warppipe_write_cb_t write_cb);
 /* called on Requester to send CR0 to Completer
  * param:
  *	client: Completer client
@@ -84,7 +84,7 @@ int warppipe_register_bar(struct warppipe_client_t *client, uint64_t bar, uint32
  *	0 - success
  *	-1 - network error
  */
-int warppipe_config0_read(struct warppipe_client_t *client, uint64_t addr, int length, warppipe_completion_cb_t completion_cb);
+int warppipe_config0_read(struct warppipe_client *client, uint64_t addr, int length, warppipe_completion_cb_t completion_cb);
 /* called on Requester to send CW0 to Completer
  * param:
  *	client: Completer client
@@ -95,7 +95,7 @@ int warppipe_config0_read(struct warppipe_client_t *client, uint64_t addr, int l
  *	0 - success
  *	-1 - network error
  */
-int warppipe_config0_write(struct warppipe_client_t *client, uint64_t addr, const void *data, int length);
+int warppipe_config0_write(struct warppipe_client *client, uint64_t addr, const void *data, int length);
 /* called on Requester to send MRd to Completer
  * Requester needs to register completion callback and match
  * request with completion tag
@@ -107,7 +107,7 @@ int warppipe_config0_write(struct warppipe_client_t *client, uint64_t addr, cons
  *	0 - success
  *	-1 - network error
  */
-int warppipe_read(struct warppipe_client_t *client, int bar_idx, uint64_t addr, int length, warppipe_completion_cb_t completion_cb);
+int warppipe_read(struct warppipe_client *client, int bar_idx, uint64_t addr, int length, warppipe_completion_cb_t completion_cb);
 /* called on Requester to send MWr to Completer
  * param:
  *	client: Completer client
@@ -118,7 +118,7 @@ int warppipe_read(struct warppipe_client_t *client, int bar_idx, uint64_t addr, 
  *	0 - success
  *	-1 - network error
  */
-int warppipe_write(struct warppipe_client_t *client, int bar_idx, uint64_t addr, const void *data, int length);
+int warppipe_write(struct warppipe_client *client, int bar_idx, uint64_t addr, const void *data, int length);
 
 #ifdef __cplusplus
 }

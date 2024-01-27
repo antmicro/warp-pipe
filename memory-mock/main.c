@@ -55,7 +55,7 @@
 #define BAR_TYPE_64B (0x10 << BAR_TYPE_OFFSET)
 #define BAR_MEMORY_SPACE 0x1
 
-struct bar_config_t {
+struct bar_config {
 	uint8_t config;
 	uint32_t size;
 	warppipe_read_cb_t read_cb;
@@ -107,7 +107,7 @@ static struct pcie_configuration_space_header_type0 configuration_space = {
 	.header_type = 0x0,
 };
 
-static struct bar_config_t bars_config[6] = {
+static struct bar_config bars_config[6] = {
 	[0] = {
 		.config = BAR_TYPE_32B | BAR_MEMORY_SPACE,
 		.size = sizeof(bar0_memory),
@@ -128,7 +128,7 @@ static struct bar_config_t bars_config[6] = {
 	[5] = { .config = BAR_INACTIVE, },
 };
 
-static struct warppipe_server_t server = {
+static struct warppipe_server server = {
 	.listen = true,
 	.addr_family = AF_UNSPEC,
 	.host = NULL,
@@ -136,7 +136,7 @@ static struct warppipe_server_t server = {
 	.quit = false,
 };
 
-static int read_bar(struct bar_config_t bar, uint64_t addr, void *data, int length, void *private_data)
+static int read_bar(struct bar_config bar, uint64_t addr, void *data, int length, void *private_data)
 {
 	if (addr > bar.size) {
 		syslog(LOG_ERR, "Trying to read outside of the BAR memory (addr: 0x%lx, BAR size: 0x%x)", addr, bar.size);
@@ -154,7 +154,7 @@ static int read_bar(struct bar_config_t bar, uint64_t addr, void *data, int leng
 	return 0;
 }
 
-static void write_bar(struct bar_config_t bar, uint64_t addr, const void *data, int length, void *private_data)
+static void write_bar(struct bar_config bar, uint64_t addr, const void *data, int length, void *private_data)
 {
 	if (addr > bar.size) {
 		syslog(LOG_ERR, "Trying to write outside of the BAR memory (addr: 0x%lx, BAR size: 0x%x)", addr, bar.size);
@@ -175,7 +175,7 @@ DEFINE_BAR_READ_CB(0)
 DEFINE_BAR_READ_CB(1)
 DEFINE_BAR_WRITE_CB(1)
 
-static struct warppipe_client_t *mock_dev_client;
+static struct warppipe_client *mock_dev_client;
 
 #define BAR_ADDR(addr) \
 	(((addr) >= offsetof(struct pcie_configuration_space_header_type0, bar)) && \
@@ -186,7 +186,7 @@ static struct warppipe_client_t *mock_dev_client;
 
 static void handle_config_bar_write(int bar_idx, uint32_t value, int length)
 {
-	struct bar_config_t bar = bars_config[bar_idx];
+	struct bar_config bar = bars_config[bar_idx];
 	uint32_t bar_addr = value & ~BAR_MASK_SIZE(bar.size);
 
 	configuration_space.bar[bar_idx] = bar_addr | bar.config;
@@ -231,7 +231,7 @@ static void config0_write_cb(uint64_t addr, const void *data, int length, void *
 		syslog(LOG_NOTICE,  "Unhandled config0 write to 0x%lx\n", addr);
 }
 
-static void server_client_accept(struct warppipe_client_t *client, void *private_data)
+static void server_client_accept(struct warppipe_client *client, void *private_data)
 {
 	warppipe_register_config0_read_cb(client, config0_read_cb);
 	warppipe_register_config0_write_cb(client, config0_write_cb);
@@ -308,7 +308,7 @@ int main(int argc, char *argv[])
 
 	/* verify configuration */
 	for (int i = 0; i < BAR_N; i++) {
-		struct bar_config_t bar = bars_config[i];
+		struct bar_config *const bar = bars_config[i];
 
 		if (!BAR_CHECK_SIZE(bar.size)) {
 			syslog(LOG_ERR, "Bar size must be a power of 2 (BAR%d has size %d).", i, bar.size);

@@ -35,7 +35,7 @@ FAKE_VALUE_FUNC(int, setsockopt, int, int, int,const void *, socklen_t);
 }
 
 TEST(TestServer, CreatesServer) {
-	warppipe_server_t server = {};
+	warppipe_server server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -54,7 +54,7 @@ TEST(TestServer, CreatesServer) {
 }
 
 TEST(TestServer, CreatesServerFailSocket) {
-	warppipe_server_t server = {};
+	warppipe_server server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -66,7 +66,7 @@ TEST(TestServer, CreatesServerFailSocket) {
 }
 
 TEST(TestServer, CreatesServerFailBind) {
-	warppipe_server_t server = {};
+	warppipe_server server = {};
 	server.listen = true;
 	server.port = "0";
 
@@ -80,7 +80,7 @@ TEST(TestServer, CreatesServerFailBind) {
 }
 
 TEST(TestServer, ServerLoopEmpty) {
-	warppipe_server_t server = {};
+	warppipe_server server = {};
 	server.listen = true;
 	server.port = "0";
 
