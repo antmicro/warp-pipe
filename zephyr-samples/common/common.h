@@ -7,7 +7,7 @@
 #include <warppipe/client.h>
 #include <warppipe/server.h>
 
-struct read_compl_data_t {
+struct read_compl_data {
 	uint8_t *buf;
 	uint32_t buf_size;
 	int ret;
@@ -26,7 +26,7 @@ struct read_compl_data_t {
  * NOTE: The field address (offset) and size must be consistent with the specification (see https://wiki.osdev.org/PCI#Header_Type_0x0).
  * Only 32 bit values are supported.
  */
-int read_config_header_field(struct warppipe_server_t *server, struct warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf);
+int read_config_header_field(struct warppipe_server *server, struct warppipe_client *client, uint64_t addr, int length, uint8_t *buf);
 
 /* Read data from memory registed by given BAR.
  *
@@ -38,6 +38,6 @@ int read_config_header_field(struct warppipe_server_t *server, struct warppipe_c
  *	length: length of requested read
  *	buf: buffer for holding read data
  */
-int read_data(struct warppipe_server_t *server, struct warppipe_client_t *client, int bar, uint64_t addr, int length, uint8_t *buf);
+int read_data(struct warppipe_server *server, struct warppipe_client *client, int bar, uint64_t addr, int length, uint8_t *buf);
 
 #endif /* __COMMON_H__ */

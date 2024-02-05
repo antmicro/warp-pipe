@@ -6,10 +6,10 @@
 
 LOG_MODULE_REGISTER(common, LOG_LEVEL_DBG);
 
-static void read_compl(const struct warppipe_completion_status_t, const void *, int, void *);
-static int wait_for_completion(struct warppipe_server_t *, struct read_compl_data_t *);
+static void read_compl(const struct warppipe_completion_status, const void *, int, void *);
+static int wait_for_completion(struct warppipe_server *, struct read_compl_data *);
 
-int read_config_header_field(struct warppipe_server_t *server, struct warppipe_client_t *client, uint64_t addr, int length, uint8_t *buf)
+int read_config_header_field(struct warppipe_server *server, struct warppipe_client *client, uint64_t addr, int length, uint8_t *buf)
 {
 	int ret;
 	uint64_t aligned_addr = addr & ~0x3;
@@ -21,7 +21,7 @@ int read_config_header_field(struct warppipe_server_t *server, struct warppipe_c
 		return -1;
 	}
 
-	struct read_compl_data_t read_data = {
+	struct read_compl_data read_data = {
 		.finished = false,
 		.buf = (void *)&aligned_buf,
 		.buf_size = 4,
@@ -43,10 +43,10 @@ int read_config_header_field(struct warppipe_server_t *server, struct warppipe_c
 	return read_data.ret;
 }
 
-int read_data(struct warppipe_server_t *server, struct warppipe_client_t *client, int bar, uint64_t addr, int length, uint8_t *buf)
+int read_data(struct warppipe_server *server, struct warppipe_client *client, int bar, uint64_t addr, int length, uint8_t *buf)
 {
 	int ret;
-	struct read_compl_data_t read_data = {
+	struct read_compl_data read_data = {
 		.finished = false,
 		.buf = (void *)buf,
 		.buf_size = length,
@@ -67,9 +67,9 @@ int read_data(struct warppipe_server_t *server, struct warppipe_client_t *client
 	return read_data.ret;
 }
 
-static void read_compl(const struct warppipe_completion_status_t completion_status, const void *data, int length, void *private_data)
+static void read_compl(const struct warppipe_completion_status completion_status, const void *data, int length, void *private_data)
 {
-	struct read_compl_data_t *read_data = (struct read_compl_data_t *)private_data;
+	struct read_compl_data *read_data = (struct read_compl_data *)private_data;
 
 	read_data->finished = true;
 
@@ -87,7 +87,7 @@ static void read_compl(const struct warppipe_completion_status_t completion_stat
 	memcpy(read_data->buf, data, length);
 }
 
-static int wait_for_completion(struct warppipe_server_t *server, struct read_compl_data_t *read_data)
+static int wait_for_completion(struct warppipe_server *server, struct read_compl_data *read_data)
 {
 	while (!read_data->finished && !server->quit)
 		warppipe_server_loop(server);

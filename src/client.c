@@ -29,7 +29,7 @@
 #include <warppipe/crc.h>
 #include <warppipe/config.h>
 
-static int get_bar_idx(struct warppipe_client_t *client, uint64_t addr)
+static int get_bar_idx(struct warppipe_client *client, uint64_t addr)
 {
 	for (int i = 0; i < 6; i++) {
 		if ((addr & ~(client->bar_size[i] - 1)) == client->bar[i])
@@ -38,7 +38,7 @@ static int get_bar_idx(struct warppipe_client_t *client, uint64_t addr)
 	return -1;
 }
 
-void handle_dllp(struct warppipe_client_t *client, const struct pcie_dllp *pkt)
+void handle_dllp(struct warppipe_client *client, const struct pcie_dllp *pkt)
 {
 	if (pkt->dl_type == PCIE_DLLP_ACK || pkt->dl_type == PCIE_DLLP_NAK) {
 		uint16_t seqno = pkt->dl_acknak.dl_seqno_hi << 8 | pkt->dl_acknak.dl_seqno_lo;
@@ -52,7 +52,7 @@ void handle_dllp(struct warppipe_client_t *client, const struct pcie_dllp *pkt)
 	}
 }
 
-int client_send_pcie_transport(struct warppipe_client_t *client, struct warppipe_pcie_transport *tport)
+int client_send_pcie_transport(struct warppipe_client *client, struct warppipe_pcie_transport *tport)
 {
 	int packet_length = 1 + sizeof(tport->t_dllp);
 
@@ -78,7 +78,7 @@ int client_send_pcie_transport(struct warppipe_client_t *client, struct warppipe
 	return n;
 }
 
-void handle_memory_read_request(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
+void handle_memory_read_request(struct warppipe_client *client, const struct pcie_tlp *pkt)
 {
 	syslog(LOG_DEBUG, "Got read request TLP");
 	warppipe_read_cb_t read_cb = NULL;
@@ -140,7 +140,7 @@ void handle_memory_read_request(struct warppipe_client_t *client, const struct p
 	free(tport);
 }
 
-void handle_memory_write_request(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
+void handle_memory_write_request(struct warppipe_client *client, const struct pcie_tlp *pkt)
 {
 	syslog(LOG_DEBUG, "Got write request TLP");
 	warppipe_write_cb_t write_cb = NULL;
@@ -187,9 +187,9 @@ void handle_memory_write_request(struct warppipe_client_t *client, const struct 
 	write_cb(addr, data, data_len, client->private_data);
 }
 
-void handle_completion(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
+void handle_completion(struct warppipe_client *client, const struct pcie_tlp *pkt)
 {
-	struct warppipe_completion_status_t completion_status;
+	struct warppipe_completion_status completion_status;
 
 	completion_status.error_code = 0;
 
@@ -205,7 +205,7 @@ void handle_completion(struct warppipe_client_t *client, const struct pcie_tlp *
 	client->completion_cb[pkt->tlp_cpl.c_tag] = NULL;
 }
 
-void handle_tlp(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
+void handle_tlp(struct warppipe_client *client, const struct pcie_tlp *pkt)
 {
 	switch ((enum pcie_tlp_type)(pkt->tlp_fmt << 5 | pkt->tlp_type)) {
 	case PCIE_TLP_IORD:
@@ -240,7 +240,7 @@ void handle_tlp(struct warppipe_client_t *client, const struct pcie_tlp *pkt)
 	}
 }
 
-int warppipe_ack(struct warppipe_client_t *client, enum pcie_dllp_type type, uint16_t seqno)
+int warppipe_ack(struct warppipe_client *client, enum pcie_dllp_type type, uint16_t seqno)
 {
 	struct warppipe_pcie_transport tport = {
 		.t_proto = PCIE_PROTO_DLLP,
@@ -259,7 +259,7 @@ int warppipe_ack(struct warppipe_client_t *client, enum pcie_dllp_type type, uin
 	return 0;
 }
 
-void warppipe_client_read(struct warppipe_client_t *client)
+void warppipe_client_read(struct warppipe_client *client)
 {
 	struct warppipe_pcie_transport *tport = (void *)client->buf;
 	int len = 0;
@@ -322,7 +322,7 @@ void warppipe_client_read(struct warppipe_client_t *client)
 	}
 }
 
-void warppipe_client_create(struct warppipe_client_t *client, int client_fd)
+void warppipe_client_create(struct warppipe_client *client, int client_fd)
 {
 	client->fd = client_fd;
 	client->seqno = 0;
@@ -339,7 +339,7 @@ void warppipe_client_create(struct warppipe_client_t *client, int client_fd)
 
 }
 
-int warppipe_register_bar(struct warppipe_client_t *client, uint64_t bar, uint32_t bar_size, int bar_idx, warppipe_read_cb_t read_cb, warppipe_write_cb_t write_cb)
+int warppipe_register_bar(struct warppipe_client *client, uint64_t bar, uint32_t bar_size, int bar_idx, warppipe_read_cb_t read_cb, warppipe_write_cb_t write_cb)
 {
 	if (client->bar[bar_idx] != 0) {
 		syslog(LOG_ERR, "Tried to register new BAR on %d idx, but this idx is already in use!", bar_idx);
@@ -358,17 +358,17 @@ int warppipe_register_bar(struct warppipe_client_t *client, uint64_t bar, uint32
 	return 0;
 }
 
-void warppipe_register_config0_read_cb(struct warppipe_client_t *client, warppipe_read_cb_t read_cb)
+void warppipe_register_config0_read_cb(struct warppipe_client *client, warppipe_read_cb_t read_cb)
 {
 	client->cfg0_read_cb = read_cb;
 }
 
-void warppipe_register_config0_write_cb(struct warppipe_client_t *client, warppipe_write_cb_t write_cb)
+void warppipe_register_config0_write_cb(struct warppipe_client *client, warppipe_write_cb_t write_cb)
 {
 	client->cfg0_write_cb = write_cb;
 }
 
-static int warppipe_read_imp(struct warppipe_client_t *client, uint64_t addr, int length, warppipe_completion_cb_t completion_cb, enum pcie_tlp_type type)
+static int warppipe_read_imp(struct warppipe_client *client, uint64_t addr, int length, warppipe_completion_cb_t completion_cb, enum pcie_tlp_type type)
 {
 	int tag = client->read_tag++;
 	struct warppipe_pcie_transport tport = {
@@ -397,7 +397,7 @@ static int warppipe_read_imp(struct warppipe_client_t *client, uint64_t addr, in
 	return 0;
 }
 
-static int warppipe_write_imp(struct warppipe_client_t *client, uint64_t addr, const void *data, int length, enum pcie_tlp_type type)
+static int warppipe_write_imp(struct warppipe_client *client, uint64_t addr, const void *data, int length, enum pcie_tlp_type type)
 {
 	int rc = 0;
 	struct warppipe_pcie_transport *tport = malloc(sizeof(struct warppipe_pcie_transport) + ((length + (addr & 3) + 3) & ~3));
@@ -421,7 +421,7 @@ static int warppipe_write_imp(struct warppipe_client_t *client, uint64_t addr, c
 	return rc > 0 ? 0 : rc;
 }
 
-int warppipe_read(struct warppipe_client_t *client, int bar_idx, uint64_t addr, int length, warppipe_completion_cb_t completion_cb)
+int warppipe_read(struct warppipe_client *client, int bar_idx, uint64_t addr, int length, warppipe_completion_cb_t completion_cb)
 {
 	if (client->bar[bar_idx] == 0) {
 		syslog(LOG_ERR, "Tried to send MRd to BAR %d idx, but this idx isn't registered!", bar_idx);
@@ -430,12 +430,12 @@ int warppipe_read(struct warppipe_client_t *client, int bar_idx, uint64_t addr, 
 	return warppipe_read_imp(client, client->bar[bar_idx] + addr, length, completion_cb, PCIE_TLP_MRD64);
 }
 
-int warppipe_config0_read(struct warppipe_client_t *client, uint64_t addr, int length, warppipe_completion_cb_t completion_cb)
+int warppipe_config0_read(struct warppipe_client *client, uint64_t addr, int length, warppipe_completion_cb_t completion_cb)
 {
 	return warppipe_read_imp(client, addr, length, completion_cb, PCIE_TLP_CR0);
 }
 
-int warppipe_write(struct warppipe_client_t *client, int bar_idx, uint64_t addr, const void *data, int length)
+int warppipe_write(struct warppipe_client *client, int bar_idx, uint64_t addr, const void *data, int length)
 {
 	if (client->bar[bar_idx] == 0) {
 		syslog(LOG_ERR, "Tried to send MWr to BAR %d idx, but this idx isn't registered!", bar_idx);
@@ -444,7 +444,7 @@ int warppipe_write(struct warppipe_client_t *client, int bar_idx, uint64_t addr,
 	return warppipe_write_imp(client, client->bar[bar_idx] + addr, data, length, PCIE_TLP_MWR64);
 }
 
-int warppipe_config0_write(struct warppipe_client_t *client, uint64_t addr, const void *data, int length)
+int warppipe_config0_write(struct warppipe_client *client, uint64_t addr, const void *data, int length)
 {
 	return warppipe_write_imp(client, addr, data, length, PCIE_TLP_CW0);
 }

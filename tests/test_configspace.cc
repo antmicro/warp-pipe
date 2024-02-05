@@ -19,17 +19,15 @@
 #include "common.h"
 #include <stdio.h>
 
-extern "C" {
 #include <warppipe/proto.h>
 #include <warppipe/yaml_configspace.h>
-}
 
 #define SPLIT2(hi, lo) ((hi << 8) | lo)
 #define SPLIT3(hi, mid, lo) ((hi << 16) | (mid << 8) | lo)
 #define SPLIT4(hi, mid_hi, mid_lo, lo) ((hi << 24) | (mid_hi << 16) | (mid_lo << 8) | lo)
 
 TEST(TestConfigSpace, ParseTestFile) {
-	struct pcie_configuration_space_header_type0 header;
+	pcie_configuration_space_header_type0 header;
 	int retval = 0;
 
 	FILE* config = tmpfile();
@@ -69,7 +67,7 @@ max_lat: 13", config);
 }
 
 TEST(TestConfigSpace, ParseTestFileNegative) {
-	struct pcie_configuration_space_header_type0 header;
+	pcie_configuration_space_header_type0 header;
 	int retval = 0;
 
 	FILE* config = tmpfile();
