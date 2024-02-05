@@ -82,8 +82,7 @@ static bool should_disconnect_client(struct warppipe_client *client)
 	return !client->active;
 }
 
-void warppipe_server_disconnect_clients(struct warppipe_server *server, bool (*condition)(struct
-			warppipe_client *client))
+void warppipe_server_disconnect_clients(struct warppipe_server *server, warppipe_server_disconnect_cond_t condition)
 {
 	struct warppipe_client_node *i, *tmp;
 

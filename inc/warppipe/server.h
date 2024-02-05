@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 typedef void (*warppipe_server_accept_cb_t)(struct warppipe_client *client, void *private_data);
+typedef bool (*warppipe_server_disconnect_cond_t) (struct warppipe_client *client);
 
 struct warppipe_server {
 	/* server's socket fd */
