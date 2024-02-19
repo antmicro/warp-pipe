@@ -40,4 +40,13 @@ int read_config_header_field(struct warppipe_server *server, struct warppipe_cli
  */
 int read_data(struct warppipe_server *server, struct warppipe_client *client, int bar, uint64_t addr, int length, uint8_t *buf);
 
+
+/* Enumerate PCIe device.
+ *
+ * params:
+ *	server: warppipe server (PCIe device)
+ *	client: warppipe client (PCIe host)
+ */
+int enumerate(struct warppipe_server *server, struct warppipe_client *client);
+
 #endif /* __COMMON_H__ */
