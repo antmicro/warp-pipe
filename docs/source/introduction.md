@@ -9,6 +9,10 @@ This includes:
 * creating PCIe links between instances of different simulators/emulators (e.g. Renode and QEMU) and operating systems (e.g. Zephyr)
 * handling MSIs, packet routing and flow control
 
+The structure of the Warp Pipe-oriented flow can be visualized in a ISO-style stack format:
+
+![Warp Pipe stack](img/warp-pipe--diagram.svg "Warp Pipe stack")
+
 This document covers Warp Pipe itself, its usage and companion utilities, like Wireshark PCIe dissector.
 
 ## Structure of the repository

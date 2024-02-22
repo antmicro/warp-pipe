@@ -1,10 +1,20 @@
 # Warp Pipe usage examples
 
-Warp Pipe can be used in various different contexts
+Warp Pipe can be used in various different contexts:
 
 * directly with host applications, mocking PCIe devices
 * linked with operating systems like Zephyr
 * connected to simulation tools, intercepting PCIe traffic
+
+Typical target usage will consist of two operating systems, running in virtualized/simulated environments, communicating over Warp Pipe running on host, as can be exemplified by the following graphs:
+
+![Warp Pipe Basic Flow](img/warp-pipe--basic-flow.svg "Basic flow")
+
+Apart from employing Warp Pipe for node-to-node communication, it can also be used to automate testing of APIs and protocols over PCIe, with one endpoint running in a simulated environment and the other one in a custom application on host, prepared specifically for the purpose of the test and exercising a desired test scenario.
+
+These tests can also be orchestrated via Zephyr's Twister and a custom Warp Pipe harness:
+
+![Warp Pipe Basic Flow](img/warp-pipe--testing-flow.svg "Testing flow")
 
 To exemplify these various use cases, the Warp Pipe repository comes with a range of samples and tests.
 
