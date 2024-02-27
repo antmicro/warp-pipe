@@ -98,3 +98,64 @@ static int wait_for_completion(struct warppipe_server *server, struct read_compl
 	}
 	return 0;
 }
+
+int enumerate(struct warppipe_server *server, struct warppipe_client *client)
+{
+	int ret;
+	uint16_t vendor_id;
+	uint8_t header_type;
+
+	/* TODO: Use write_config_header to reset proper bits in the Command Register
+	 * of the header of Enhanced Configuration Address Space.
+	 * This is necessary before registering BARs.
+	 * See https://web.archive.org/web/20231215100814/https://marz.utk.edu/my-courses/cosc562/pcie/#command_register
+	 */
+
+	/* Read vendor id. If 0xFFFF, then it is not enabled. */
+	ret = read_config_header_field(server, client, 0x0, 2, (uint8_t *)&vendor_id);
+	if (ret < 0 || vendor_id == 0xFFFF)
+		return -1;
+
+	/* Check device type (only 0 is supported). */
+	ret = read_config_header_field(server, client, 0xE, 1, &header_type);
+	if (ret < 0 || header_type != 0x0)
+		return -1;
+
+	/* TODO: Print some useful info data from header. */
+
+	uint32_t bar, old_bar;
+
+	/* Check and register BARs. */
+	for (int bar_offset = 0x10; bar_offset < 0x28; bar_offset += 4) {
+		ret = read_config_header_field(server, client, bar_offset, sizeof(uint32_t), (uint8_t *)&old_bar);
+		if (ret < 0)
+			continue;
+
+		bar = 0xFFFFFFFF;
+		ret = warppipe_config0_write(client, bar_offset, &bar, sizeof(uint32_t));
+		if (ret < 0)
+			continue;
+
+		ret = read_config_header_field(server, client, bar_offset, sizeof(uint32_t), (uint8_t *)&bar);
+		if (ret < 0 || bar == 0x0)
+			continue;
+
+		uint32_t size = -(bar & ~0xF);
+		uint32_t bar_idx = (bar_offset - 0x10) / sizeof(uint32_t);
+		uint32_t bar_addr = bar_offset * 0x10000;
+
+		LOG_INF("Registering bar %d at 0x%x (size: %d)", bar_idx, bar_addr, size);
+
+		ret = warppipe_register_bar(client, bar_addr, size, bar_idx, NULL, NULL);
+		if (ret < 0)
+			continue;
+
+		ret = warppipe_config0_write(client, bar_offset, &bar_addr, sizeof(uint32_t));
+		if (ret < 0)
+			continue;
+	}
+
+	/* TODO: Enable memory in command register. */
+
+	return 0;
+}

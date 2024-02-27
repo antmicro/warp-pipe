@@ -129,6 +129,42 @@ Read data (len: 16): 68 65 6c 6c 6f 00 00 00 00 00 00 00 00 00 00 00
 [00:00:00.000,000] <inf> pcie_native: All checks has succeded.
 ```
 
+## PCIe Native (threaded)
+
+Requirements
+* [warp-pipe](#basics)
+* [memory-mock](#memory-mock)
+* [Zephyr](#zephyr-setup)
+
+This sample, located in `zephyr-samples/pcie_native_thread`, is a threaded version of PCIe Native, used for benchmarking Warp Pipe.
+
+First, build Zephyr:
+```
+west build -p -d build.pcie_native_thread -b native_sim zephyr-samples/pcie_native_thread
+```
+
+After that, launch `memory-mock`:
+```
+./build_memory_mock/memory_mock
+```
+
+As the last step, launch Zephyr:
+```
+./build.pcie_native_thread/zephyr/zephyr.exe
+```
+
+Expect the following output:
+```
+*** Booting Zephyr OS build f89c5ddd1aaf ***
+[00:00:00.000,000] <inf> pcie_native: Started app
+[00:00:00.000,000] <inf> pcie_native: Started client
+[00:00:00.000,000] <inf> pcie_native: Registering bar 0 at 0x100000 (size: 128)
+[00:00:00.000,000] <inf> pcie_native: Registering bar 1 at 0x140000 (size: 2048)
+[00:00:21.000,000] <inf> pcie_native: Done!
+```
+
+To read more about using the application for benchmarking, see the [performance analysis chapter](#performance_analysis)
+
 ## PCIe DMA
 
 Requirements:

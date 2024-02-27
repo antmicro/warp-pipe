@@ -1,0 +1,5 @@
+source "Kconfig.zephyr"
+
+config PCIE_PIPE_SERVER
+	string "PCIe pipe server address"
+	default "127.0.0.1"

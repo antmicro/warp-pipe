@@ -11,4 +11,5 @@ library
 qemu
 wireshark
 twister
+performance_analysis
 ```
