@@ -1,11 +1,5 @@
 .job_template:
-  image: "d2s://external/docker/debian:bookworm"
-  tags: ["ace-x86_64"]
-  variables:
-    SCALENODE_CPU: 2
-    SCALENODE_DISK: 10
-    SCALENODE_RAM: 2048
-    DEBIAN_FRONTEND: noninteractive
+  image: debian:bookworm
 
 stages:
   - build
@@ -38,16 +32,12 @@ Build PCIe Communication Server:
 
 Build Zephyr Samples:
   stage: build
-  tags: ["ace-x86_64"]
   variables:
-    SCALENODE_CPU: 8
-    SCALENODE_DISK: 10
-    SCALENODE_RAM: 8192
     DEBIAN_FRONTEND: noninteractive
     CMAKE_PREFIX_PATH: /opt/toolchains
     GIT_SUBMODULE_STRATEGY: normal
     PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
-  image: "d2s://external/docker/zephyrprojectrtos/ci:v0.26.5"
+  image: zephyrprojectrtos/ci:v0.26.5
 
   before_script:
     - apt update -qq
@@ -114,7 +104,7 @@ Checkpatch:
 Twister tests:
   stage: build
   extends: .job_template
-  image: "d2s://external/docker/zephyrprojectrtos/ci:v0.26.5"
+  image: zephyrprojectrtos/ci:v0.26.5
   variables:
     CMAKE_PREFIX_PATH: /opt/toolchains
     PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
