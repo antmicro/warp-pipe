@@ -1,12 +1,9 @@
-.job_template:
-  image: debian:bookworm
-
 stages:
   - build
 
 Build PCIe Communication Server:
   stage: build
-  extends: .job_template
+  image: debian:bookworm
 
   before_script:
     - apt update -qq
@@ -85,7 +82,7 @@ Build Zephyr Samples:
 
 Checkpatch:
   stage: build
-  extends: .job_template
+  image: debian:bookworm
 
   before_script:
     - apt update -qq
@@ -103,7 +100,6 @@ Checkpatch:
 
 Twister tests:
   stage: build
-  extends: .job_template
   image: zephyrprojectrtos/ci:v0.26.5
   variables:
     CMAKE_PREFIX_PATH: /opt/toolchains
